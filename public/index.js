@@ -1,12 +1,26 @@
 
-import {Char} from './lib/char.js';
-import {Log} from './lib/log.js';
+import { RoleSet } from './lib/char.js';
+import { Log } from './lib/log.js';
+import { Round } from './lib/round.js';
 
 class Misc {
   static RUNNING = 'running';
   static PAUSE = 'pause';
+
+  static LOOP_TALK = 'select_talk';
+  static LOOP_VOTE = 'select_vote';
+  /** 狩人のみ */
+  static LOOP_SEL_GUARD = 'select_guard';
+  /** 占いのみ */
+  static LOOP_SEL_SEER = 'select_seer';
+  /** 人狼のみ */
+  static LOOP_SEL_ATTACK = 'select_attack';
+  /**  */
+  static LOOP_NONE = 'none';
+
   constructor() {
     this.status = Misc.RUNNING;
+    this.loopStatus = Misc.LOOP_TALK;
 
     this.log = new Log();
   }
@@ -50,9 +64,23 @@ class Misc {
   }
 
   actOneTick() {
-    this.log.log('actOneTick');
+    //this.log.log('actOneTick');
 
-    
+    switch (this.loopStatus) {
+    case Misc.LOOP_TALK:
+      break;
+    case Misc.LOOP_VOTE:
+      break;
+    case Misc.LOOP_SEL_GUARD:
+      break;
+    case Misc.LOOP_SEL_SEER:
+      break;
+    case Misc.LOOP_SEL_ATTACK:
+      break;
+    case Misc.LOOP_NONE:
+      break;
+    }
+
   }
 
   pause() {
@@ -72,6 +100,10 @@ class Misc {
    */
   initRound() {
     this.log.log('initRound');
+
+    this.round = new Round();
+
+
   }
 
   /**
@@ -86,16 +118,69 @@ class Misc {
    */
   initVote() {
 
+    this.loopStatus = Misc.LOOP_VOTE;
+  }
+
+  morningLoop() {
+    { // 被害の公開
+    }
+  }
+
+  talkLoop() {
+
+    this.loopStatus = Misc.LOOP_NONE;
   }
 
   /**  */
-  act1() {
+  voteLoop() {
 
+
+    const result = this.round.checkWin();
+    if (!result) {
+      return;
+    }
+
+    // 決着
+
+    //this.loopStatus = Misc.LOOP_NONE;
   }
 
   /**  */
-  act2() {
+  nightLoop() {
+    { // 霊媒の結果の通知
+      const medium = this.round.enumByRole(RoleSet.ROLE_MEDIUM, true);
+      for (const a of medium) {
 
+      }
+    }
+
+    { // ガードの選択
+      const guard = this.round.enumByRole(RoleSet.ROLE_BODYGUARD, true);
+      for (const a of guard) {
+
+      }
+    }
+    { // 占いの選択と結果
+      const seerer = this.round.enumByRole(RoleSet.ROLE_SEERER, true);
+      for (const a of seerer) {
+
+      }
+    }
+    { // 襲撃の選択と結果
+      const wolf = this.round.enumByRole(RoleSet.ROLE_WEREWOLF, true);
+      for (const a of wolf) {
+        
+      }
+    }
+
+    const result = this.round.checkWin();
+    if (!result) {
+      return;
+    }
+
+    // 決着
+
+    //this.loopStatus = Misc.LOOP_NONE;
   }
 
 }
