@@ -165,14 +165,13 @@ class Misc {
     { // 霊媒の結果の通知
       const medium = this.round.enumByRole(RoleSet.ROLE_MEDIUM, true);
       for (const a of medium) {
-
       }
     }
 
     { // ガードの選択
       const guard = this.round.enumByRole(RoleSet.ROLE_BODYGUARD, true);
       for (const a of guard) {
-
+        const result = a.think.thinkGuard();
       }
     }
     { // 占いの選択と結果

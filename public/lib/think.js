@@ -1,6 +1,6 @@
 
 export class Think {
-  constructor () {
+  constructor() {
   }
 
   init() {

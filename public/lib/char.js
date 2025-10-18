@@ -1,3 +1,5 @@
+import { GuardThink } from "./guardthink";
+import { MediumThink } from "./mediumthink";
 
 export class CharSet {
   constructor() {
@@ -76,18 +78,34 @@ export class RoleSet {
   constructor() {
     /** 13人村の場合 */
     this.roles = [
-      {num: 6, role: RoleSet.ROLE_VILLAGER, descname: '村人', icon: '🙂', species: RoleSet.HUMAN, team: RoleSet.TEAM_VIL},
-      {num: 1, role: RoleSet.ROLE_SEERER, descname: '占い師', icon: '🔮', species: RoleSet.HUMAN, team: RoleSet.TEAM_VIL},
-      {num: 1, role: RoleSet.ROLE_MEDIUM, descname: '霊媒師', icon: '⚰️', species: RoleSet.HUMAN, team: RoleSet.TEAM_VIL},
-      {num: 1, role: RoleSet.ROLE_BODYGUARD, descname: '狩人', icon: '🛡️', species: RoleSet.HUMAN, team: RoleSet.TEAM_VIL},
-      {num: 1, role: RoleSet.ROLE_POSSESSED, descname: '狂人', icon: '🤡', species: RoleSet.HUMAN, team: RoleSet.TEAM_WOLF},
-      {num: 3, role: RoleSet.ROLE_WEREWOLF, descname: '人狼', icon: '🐺', species: RoleSet.WOLF, team: RoleSet.TEAM_WOLF},
+      {num: 6, role: RoleSet.ROLE_VILLAGER, descname: '村人', icon: '🙂', species: RoleSet.HUMAN, team: RoleSet.TEAM_VIL, thinker: VilThink},
+      {num: 1, role: RoleSet.ROLE_SEERER, descname: '占い師', icon: '🔮', species: RoleSet.HUMAN, team: RoleSet.TEAM_VIL, thinker: SeerThink},
+      {num: 1, role: RoleSet.ROLE_MEDIUM, descname: '霊媒師', icon: '⚰️', species: RoleSet.HUMAN, team: RoleSet.TEAM_VIL, thinker: MediumThink},
+      {num: 1, role: RoleSet.ROLE_BODYGUARD, descname: '狩人', icon: '🛡️', species: RoleSet.HUMAN, team: RoleSet.TEAM_VIL, thinker: GuardThink},
+      {num: 1, role: RoleSet.ROLE_POSSESSED, descname: '狂人', icon: '🤡', species: RoleSet.HUMAN, team: RoleSet.TEAM_WOLF, thinker: PossessedThink},
+      {num: 3, role: RoleSet.ROLE_WEREWOLF, descname: '人狼', icon: '🐺', species: RoleSet.WOLF, team: RoleSet.TEAM_WOLF, thinker: WolfThink},
     ];
+  }
+}
+
+/**
+ * 狩人の結果も兼ねるか
+ */
+export class SpeciesCheck {
+  constructor() {
+    /** 試行した日 */
+    this.day = 1;
+    /** round内で固定のインデックス。詰めない。*/
+    this.agentIndex = 0;
+    this.resultSpecies = RoleSet.SPECIES_HUMAN;
+    /** 狩人だった場合にGJが出たらtrueにする。人間種族ということにもなる(狂人の可能性もある) */
+    this.guardSuccess = false;
   }
 }
 
 export class Char {
   constructor() {
+    /** 表示名 */
     this.descname = '🐱ねこた';
 
     this.role = RoleSet.ROLE_VILLAGER;
@@ -99,8 +117,14 @@ export class Char {
     this.closeInfo = {};
   }
 
-  init() {
+  init(rolename) {
+    const roleset = new RoleSet();
+    const role = roleset.roles(r => r.role === rolename);
 
+    this.role = role.role;
+    this.team = role.team;
+    this.species = role.species;
+    this.think = new (found.thinker)();
   }
   
 }
