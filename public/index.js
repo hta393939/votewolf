@@ -21,6 +21,7 @@ class Misc {
   constructor() {
     this.status = Misc.RUNNING;
     this.loopStatus = Misc.LOOP_TALK;
+    this.dice = null;
 
     this.log = new Log();
   }
@@ -52,8 +53,13 @@ class Misc {
 
   }
 
+  /**
+   * ゲームスタート
+   */
   startProject() {
-    this.initProject();
+    this.log.log('startProject');
+
+    this.initProject(1);
     this.initRound();
   }
 
@@ -91,8 +97,12 @@ class Misc {
     this.status = Misc.RUNNING;
   }
 
-  initProject() {
-    this.log.log('initProject do nothing');
+  initProject(seed) {
+    this.log.log('initProject, seed', seed);
+
+    const dice = new Dice();
+    dice.init(seed);
+    this.dice = dice;
   }
 
   /**
@@ -101,9 +111,10 @@ class Misc {
   initRound() {
     this.log.log('initRound');
 
-    this.round = new Round();
+    const round = new Round();
+    round.init(this.dice);
 
-
+    this.round = round;
   }
 
   /**
