@@ -145,6 +145,10 @@ class Misc {
   /**  */
   voteLoop() {
 
+    {
+      
+    }
+
 
     const result = this.round.checkWin();
     if (!result) {
@@ -192,6 +196,34 @@ class Misc {
     // 決着
 
     //this.loopStatus = Misc.LOOP_NONE;
+  }
+
+  /**
+   * 
+   * @param {HTMLCanvasElement} canvas 
+   */
+  drawRest(canvas) {
+    const canvas = document.getElementById('canvas1');
+    const w = 512;
+    const h = 512;
+    canvas.width = w;
+    canvas.height = h;
+    //const w = canvas.width;
+    //const h = canvas.height;
+    const c = canvas.getContext('2d');
+    let px = 50;
+    let fam = `Noto Sans JP Black`;
+    c.font = `bold ${px}px ${fam}`;
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    for (let i = 0; i < 13; ++i) {
+      const a = this.round.agents[i];
+      let ang = i * Math.PI * 2 / 13;
+      let x = w * 0.5 - rr * Math.sin(ang);
+      let y = h * 0.5 + rr * Math.cos(ang);
+      c.fillText(a.descname, x, y);
+    }
+
   }
 
 }

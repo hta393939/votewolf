@@ -1,6 +1,11 @@
 
 export class ConsoleItem {
+  static TYPE_SYSTEM = 'system';
+  /** ラウンド内公開情報 */
+  static TYPE_PUBLIC = 'public';
   constructor() {
+    this.type = ConsoleItem.TYPE_SYSTEM;
+
     this.text = '';
     /** 0は初日の前の日の夜用。day number にも使うか */
     this.day = 1;

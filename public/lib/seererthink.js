@@ -1,13 +1,12 @@
 
-export class WolfThink extends Think {
+export class SeererThink extends Think {
   constructor() {
     super();
   }
 
-  thinkAttack() {
+  thinkSeer() {
     return 0;
   }
 
 }
-
 

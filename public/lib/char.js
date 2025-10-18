@@ -25,14 +25,15 @@ export class CharSet {
 }
 
 export class RoleSet {
-  /** species */
+  /** 種族としての人間 */
   static SPECIES_HUMAN = 'HUMAN';
   /** 種族としての人狼 */
   static SPECIES_WOLF = 'WEREWOLF';
-  /** チーム */
+  /** 村チーム */
   static TEAM_VIL = 'vilteam';
+  /** 狼チーム */
   static TEAM_WOLF = 'wolfteam';
-  /** 役職 */
+  /** 役職としての人狼 */
   static ROLE_WEREWOLF = 'WEREWOLF';
   static ROLE_VILLAGER = 'VILLAGER';
   static ROLE_SEERER = 'SEERER';
@@ -75,12 +76,12 @@ export class RoleSet {
   constructor() {
     /** 13人村の場合 */
     this.roles = [
-      {num: 6, role: RoleSet.ROLE_VILLAGER, descname: '村人', species: RoleSet.HUMAN, team: RoleSet.TEAM_VIL},
-      {num: 1, role: RoleSet.ROLE_SEERER, descname: '占い師', species: RoleSet.HUMAN, team: RoleSet.TEAM_VIL},
-      {num: 1, role: RoleSet.ROLE_MEDIUM, descname: '霊媒師', species: RoleSet.HUMAN, team: RoleSet.TEAM_VIL},
-      {num: 1, role: RoleSet.ROLE_BODYGUARD, descname: '狩人', species: RoleSet.HUMAN, team: RoleSet.TEAM_VIL},
-      {num: 1, role: RoleSet.ROLE_POSSESSED, descname: '狂人', species: RoleSet.HUMAN, team: RoleSet.TEAM_WOLF},
-      {num: 3, role: RoleSet.ROLE_WEREWOLF, descname: '人狼', species: RoleSet.WOLF, team: RoleSet.TEAM_WOLF},
+      {num: 6, role: RoleSet.ROLE_VILLAGER, descname: '村人', icon: '🙂', species: RoleSet.HUMAN, team: RoleSet.TEAM_VIL},
+      {num: 1, role: RoleSet.ROLE_SEERER, descname: '占い師', icon: '🔮', species: RoleSet.HUMAN, team: RoleSet.TEAM_VIL},
+      {num: 1, role: RoleSet.ROLE_MEDIUM, descname: '霊媒師', icon: '⚰️', species: RoleSet.HUMAN, team: RoleSet.TEAM_VIL},
+      {num: 1, role: RoleSet.ROLE_BODYGUARD, descname: '狩人', icon: '🛡️', species: RoleSet.HUMAN, team: RoleSet.TEAM_VIL},
+      {num: 1, role: RoleSet.ROLE_POSSESSED, descname: '狂人', icon: '🤡', species: RoleSet.HUMAN, team: RoleSet.TEAM_WOLF},
+      {num: 3, role: RoleSet.ROLE_WEREWOLF, descname: '人狼', icon: '🐺', species: RoleSet.WOLF, team: RoleSet.TEAM_WOLF},
     ];
   }
 }

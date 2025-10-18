@@ -81,6 +81,10 @@ export class Round {
     });
   }
 
+  enumAlive() {
+    return this.agents.filter(a => a.alive);
+  }
+
   /**
    * 勝敗チェック。
    * @returns {string | null} nullは未決着
