@@ -175,8 +175,8 @@ class Misc {
       }
     }
     { // 占いの選択と結果
-      const seerer = this.round.enumByRole(RoleSet.ROLE_SEERER, true);
-      for (const a of seerer) {
+      const seer = this.round.enumByRole(RoleSet.ROLE_SEER, true);
+      for (const a of seer) {
 
       }
     }

@@ -92,10 +92,12 @@ export class GameSetting {
     this.roleNumMap = {
       'WEREWOLF': 3,
       'POSSESSED': 1,
-      'SEERER': 1,
+      'SEER': 1,
       'MEDIUM': 1,
       'BODYGUARD': 1,
-      'VILLARGER': 6 + 2,
+      'VILLAGER': 6 + 2,
+      'FREEMASON': 0,
+      'FOX': 0,
     };
     this.talkOnFirstDay = false;
     /** リクエストに対する応答の最大制限 */
