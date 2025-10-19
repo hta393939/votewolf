@@ -1,6 +1,11 @@
 {
   "name": "votewolf",
   "version": "0.1.0",
-  "description": ""
+  "description": "",
+  "type": "module",
+  "main": "src/main.mjs",
+  "scripts": {
+    "test": "echo test"
+  }
 }
 
