@@ -7,7 +7,7 @@ import { styleText } from 'node:util';
 import { GameInfo, GameSetting } from '../public/lib/info.mjs';
 
 const _log = (...args) => {
-  console.log(styleText('bold', `${[...args]}`));
+  console.log(styleText('magenta', `${[...args]}`));
 };
 
 
@@ -43,6 +43,9 @@ class Server {
 
     this.roundAgentNum = 15;
     this.agents = [];
+
+    this.gameSetting = new GameSetting();
+    this.gameInfo = new GameInfo();
   }
 
   initialize() {
@@ -62,15 +65,14 @@ class Server {
 
       app.on('/', router);
 
+      app.on('/', express.static('../public'));
+
       {
         const ws = null;
       }
 
       app.listen(this.port);
     }
-  }
-
-  readyWS() {
   }
 
   /** TCP待ち受け */
@@ -82,6 +84,7 @@ class Server {
         let len = this.agents.length;
         if (len >= this.roundAgentNum) {
           // close する
+          c.close();
           return;
         }
 
@@ -91,9 +94,6 @@ class Server {
         c.on('end', () => {
           _log('client disconnect');
         });
-
-        //c.write('hello\r\n');
-        //c.pipe(c);
 
         const a = new Agent();
         a.socket = c;
@@ -123,13 +123,29 @@ class Server {
         a.socket.write(`${JSON.stringify(obj)}\r\n`);
       }
 
+      if (this.gameSetting.enableRoleRequest) {
+        // エージェントに対して役職を問い合わせる
+        for (const a of this.agents) {
+          const obj = {
+            request: Agent.REQ_ROLE,
+          };
+          a.socket.write(`${JSON.stringify(obj)}\r\n`);
+        }
+      } else {
+        // 
+        for (let i = 0; i < this.agents.length; ++i) {
+          const v = this.agents[i];
+
+        }
+      }
+
       for (const a of this.agents) {
         const obj = {
           request: Agent.REQ_INITIALIZE,
-          gameInfo: new GameInfo(),
+          gameInfo: this.gameInfo,
           talkHistory: [],
           whisperHistory: [],
-          gameSetting: new GameSetting(),
+          gameSetting: this.gameSetting,
         };
         let str = `${JSON.stringify(obj)}\r\n`;
         a.socket.write(str);

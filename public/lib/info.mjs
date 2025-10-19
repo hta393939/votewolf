@@ -78,18 +78,25 @@ export class GameSetting {
     this.enableNoExecution = false;
     /** ロール要求を有効化する */
     this.enableRoleRequest = false;
-
+    /** 最大襲撃再投票数 */
     this.maxAttackRevote = 1;
     this.maxRevote = 1;
-    this.maxSkip = 1;
-    this.maxTalk = 1;
-    this.maxTalkTurn = 1;
-    this.maxWhisper = 1;
-    this.maxWhisperTurn = 1;
+    this.maxSkip = 8;
+    this.maxTalk = 8;
+    this.maxTalkTurn = 8;
+    this.maxWhisper = 8;
+    this.maxWhisperTurn = 8;
     this.playerNum = 15;
     this.randomSeed = 1;
     /** @type {Object<string,number>} */
-    this.roleNumMap = {};
+    this.roleNumMap = {
+      'WEREWOLF': 3,
+      'POSSESSED': 1,
+      'SEERER': 1,
+      'MEDIUM': 1,
+      'BODYGUARD': 1,
+      'VILLARGER': 6 + 2,
+    };
     this.talkOnFirstDay = false;
     /** リクエストに対する応答の最大制限 */
     this.timeLimit = 1000;
