@@ -37,7 +37,7 @@ export class GameInfo {
     /** @type {Vote[]} */
     this.attackVoteList = [];
     this.attackedAgent = 1;
-    this.cursedFox = 1;
+    this.cursedFox = 0;
     this.day = 1;
     /** @type {Judge} */
     this.divineResult = new Judge();
@@ -47,6 +47,8 @@ export class GameInfo {
     this.guardedAgent = 1;
     /** @type {number[]} */
     this.lastDeadAgentList = [];
+    /** @type {Vote[]} */
+    this.latestAttackVoteList = [];
     this.latestExecutedAgent = 1;
     /** @type {Vote[]} */
     this.latestVoteList = [];

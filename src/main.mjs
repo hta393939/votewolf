@@ -4,7 +4,7 @@ import express from 'express';
 import net from 'node:net';
 import { styleText } from 'node:util';
 
-import { GameInfo } from '../public/lib/info.mjs';
+import { GameInfo, GameSetting } from '../public/lib/info.mjs';
 
 const _log = (...args) => {
   console.log(styleText('bold', `${[...args]}`));
@@ -127,6 +127,9 @@ class Server {
         const obj = {
           request: Agent.REQ_INITIALIZE,
           gameInfo: new GameInfo(),
+          talkHistory: [],
+          whisperHistory: [],
+          gameSetting: new GameSetting(),
         };
         let str = `${JSON.stringify(obj)}\r\n`;
         a.socket.write(str);
