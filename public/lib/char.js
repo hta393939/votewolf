@@ -1,5 +1,3 @@
-import { GuardThink } from "./guardthink";
-import { MediumThink } from "./mediumthink";
 
 export class CharSet {
   constructor() {
@@ -11,12 +9,14 @@ export class CharSet {
       {read: `うさた`, icon: `🐰`},
       {read: `たつた`, icon: `🐲️`},
       {read: `へびた`, icon: `🐍`},
-      {read: `うまた`, icon: `🐴`},
+      {read: `うまめ`, icon: `🐴`},
       {read: `ひつた`, icon: `🐏`},
       {read: `さるた`, icon: `🐵`},
       {read: `とりた`, icon: `🐔`},
       {read: `いぬた`, icon: `🐶`},
-      {read: `いのた`, icon: `🐗`},
+      {read: `いのき`, icon: `🐗`},
+      {read: `かにた`, icon: `🦀`},
+      {read: `うおた`, icon: `🐠`},
     ];
     for (let i = 0; i < this.chars.length; ++i) {
       const v = this.chars[i];

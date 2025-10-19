@@ -1,37 +1,15 @@
 
-import ws from 'ws';
+//import ws from 'ws';
 import express from 'express';
 import net from 'node:net';
 import { styleText } from 'node:util';
+
+import { GameInfo } from '../public/lib/info.mjs';
 
 const _log = (...args) => {
   console.log(styleText('bold', `${[...args]}`));
 };
 
-class GameInfo {
-  constructor() {
-    this.agent = 1;
-    this.attackVoteList = [];
-    this.attackedAgent = 1;
-    this.cursedFox = 1;
-    this.day = 1;
-    this.divineResult = {};
-    this.executedAgent = 1;
-    this.existingRoleList = [];
-    this.guardedAgent = 1;
-    this.lastDeadAgentList = [];
-    this.latestExecutedAgent = 1;
-    this.latestVoteList = [];
-    this.mediumResult = null;
-    this.remainTalkMap = {};
-    this.remainWhisperMap = {};
-    this.roleMap = {};
-    this.statusMap = {};
-    this.talkList = [];
-    this.voteList = [];
-    this.whisperList = [];
-  }
-}
 
 class Agent {
   static REQ_NAME = 'NAME';
@@ -150,7 +128,9 @@ class Server {
           request: Agent.REQ_INITIALIZE,
           gameInfo: new GameInfo(),
         };
-        a.socket.write(`${JSON.stringify(obj)}\r\n`);
+        let str = `${JSON.stringify(obj)}\r\n`;
+        a.socket.write(str);
+        _log('initialize', str);
       }
     }
   }

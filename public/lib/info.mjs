@@ -27,7 +27,7 @@ export class Judge {
     this.day = 1;
     this.target = 1;
     /** species */
-    this.result = '';
+    this.result = 'HUMAN';
   }
 }
 
