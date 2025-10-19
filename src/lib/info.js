@@ -70,7 +70,9 @@ export class GameInfo {
 
 export class GameSetting {
   constructor() {
+    /** 誰も襲撃しないを許可するか */
     this.enableNoAttack = false;
+    /** 誰も処刑しないを許可するか */
     this.enableNoExecution = false;
     /** ロール要求を有効化する */
     this.enableRoleRequest = false;
@@ -87,10 +89,13 @@ export class GameSetting {
     /** @type {Object<string,number>} */
     this.roleNumMap = {};
     this.talkOnFirstDay = false;
+    /** リクエストに対する応答の最大制限 */
     this.timeLimit = 1000;
     this.validateUtterance = false;
+    /** ファーストデイに投票があるか */
     this.votableInFirstDay = false;
     this.voteVisible = true;
+    /** 再投票前に狼がささやきできるか */
     this.whisperBeforeRevote = true;
   }
 }
