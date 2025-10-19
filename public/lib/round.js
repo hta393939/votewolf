@@ -52,7 +52,7 @@ export class Round {
         return true;
       }
 
-      if (a.alive === false) {
+      if (a.agentStatus !== RoleSet.AST_ALIVE) {
         return false;
       }
       return true;
@@ -74,7 +74,7 @@ export class Round {
         return true;
       }
 
-      if (a.alive === false) {
+      if (a.agentStatus !== RoleSet.AST_ALIVE) {
         return false;
       }
       return true;
@@ -82,7 +82,7 @@ export class Round {
   }
 
   enumAlive() {
-    return this.agents.filter(a => a.alive);
+    return this.agents.filter(a => a.agentStatus === RoleSet.AST_ALIVE);
   }
 
   /**
@@ -90,8 +90,8 @@ export class Round {
    * @returns {string | null} nullは未決着
    */
   checkWin() {
-    const vil = this.enumBySpecies(RoleSet.HUMAN, true);
-    const wolf = this.enumBySpecies(RoleSet.WOLF, true);
+    const vil = this.enumBySpecies(RoleSet.SPECIES_HUMAN, true);
+    const wolf = this.enumBySpecies(RoleSet.SPECIES_WOLF, true);
     if (wolf.length === 0) { // タイミング的に相討ちは無い
       return RoleSet.TEAM_VIL;
     }

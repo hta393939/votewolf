@@ -82,6 +82,10 @@ export class RoleSet {
   static OP_OR = 'OR';
   static OP_XOR = 'XOR';
 
+  static AST_UNC = 'UNC';
+  static AST_ALIVE = 'ALIVE';
+  static AST_DEAD = 'DEAD';
+
   constructor() {
     /** 13人村の場合 */
     this.roles = [
@@ -119,6 +123,8 @@ export class Char {
     this.team = RoleSet.TEAM_VIL;
     this.species = RoleSet.SPECIES_HUMAN;
     this.alive = true;
+    /** エージェントのステータス */
+    this.agentStatus = RoleSet.AST_ALIVE;
 
     /** 占いや霊媒で得る非公開情報。狼もここ */
     this.closeInfo = {};

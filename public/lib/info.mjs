@@ -31,8 +31,12 @@ export class Judge {
   }
 }
 
+/**
+ * ゲームの進行に従って更新される
+ */
 export class GameInfo {
   constructor() {
+    /** 多分これ */
     this.agent = 1;
     /** @type {Vote[]} */
     this.attackVoteList = [];
@@ -57,7 +61,7 @@ export class GameInfo {
     this.remainTalkMap = {};
     /** @type {Object<string,number} */
     this.remainWhisperMap = {};
-    /** @type {Object<string,string} */
+    /** キーは整数パースできる文字列。 @type {Object<string,string} */
     this.roleMap = {};
     /** @type {Object<string,string>} */
     this.statusMap = {};
