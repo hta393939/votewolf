@@ -8,11 +8,63 @@ const _log = (...args) => {
   console.log(styleText('bold', `${[...args]}`));
 };
 
+class GameInfo {
+  constructor() {
+    this.agent = 1;
+    this.attackVoteList = [];
+    this.attackedAgent = 1;
+    this.cursedFox = 1;
+    this.day = 1;
+    this.divineResult = {};
+    this.executedAgent = 1;
+    this.existingRoleList = [];
+    this.guardedAgent = 1;
+    this.lastDeadAgentList = [];
+    this.latestExecutedAgent = 1;
+    this.latestVoteList = [];
+    this.mediumResult = null;
+    this.remainTalkMap = {};
+    this.remainWhisperMap = {};
+    this.roleMap = {};
+    this.statusMap = {};
+    this.talkList = [];
+    this.voteList = [];
+    this.whisperList = [];
+  }
+}
+
+class Agent {
+  static REQ_NAME = 'NAME';
+  static REQ_ROLE = 'ROLE';
+
+  static REQ_INITIALIZE = 'INITIALIZE';
+  /** エージェントへ渡す req */
+  static REQ_DAYI = 'DAILY_INITIALIZE';
+  static REQ_DAYF = 'DAILY_FINISH';
+  static REQ_FINISH = 'FINISH';
+  static REQ_VOTE = 'VOTE';
+  static REQ_ATTACK = 'ATTACK';
+  static REQ_GUARD = 'GUARD';
+  static REQ_DIVINE = 'DIVINE';
+  static REQ_TALK = 'TALK';
+  static REQ_WHISPER = 'WHISPER';
+
+  constructor() {
+    this.socket = null;
+  }
+
+
+
+}
+
 class Server {
   constructor() {
     this.port = 3000;
     /** 元ポート */
     this.orgport = 10000;
+
+    this.roundAgentNum = 15;
+    this.agents = [];
   }
 
   initialize() {
@@ -31,12 +83,16 @@ class Server {
       _log('Router');
 
       app.on('/', router);
+
+      {
+        const ws = null;
+      }
+
       app.listen(this.port);
     }
   }
 
   readyWS() {
-
   }
 
   /** TCP待ち受け */
@@ -44,15 +100,29 @@ class Server {
     _log('readySocket');
     {
       const server = net.createServer((c) => {
-        _log('socket create server');
+        _log('socket create server', c.remotePort);
+        let len = this.agents.length;
+        if (len >= this.roundAgentNum) {
+          // close する
+          return;
+        }
 
+        c.on('data', data => {
+          _log('on data', data);
+        });
         c.on('end', () => {
           _log('client disconnect');
         });
 
-        _log('socket', c);
         //c.write('hello\r\n');
         //c.pipe(c);
+
+        const a = new Agent();
+        a.socket = c;
+        this.agents.push(a);
+        if (this.agents.length === this.roundAgentNum) {
+          this.readyRound();
+        }
       });
       server.on('error', (err) => {
         throw err;
@@ -61,6 +131,27 @@ class Server {
         _log('listen');
       });
       this.socket = server;
+    }
+  }
+
+  readyRound() {
+    _log('readyRound');
+
+    {
+      for (const a of this.agents) {
+        const obj = {
+          request: Agent.REQ_NAME,
+        };
+        a.socket.write(`${JSON.stringify(obj)}\r\n`);
+      }
+
+      for (const a of this.agents) {
+        const obj = {
+          request: Agent.REQ_INITIALIZE,
+          gameInfo: new GameInfo(),
+        };
+        a.socket.write(`${JSON.stringify(obj)}\r\n`);
+      }
     }
   }
 
