@@ -1,6 +1,7 @@
 
-import * from 'ws';
-import * from 'express';
+import ws from 'ws';
+import express from 'express';
+import net from 'node:net';
 import { styleText } from 'node:util';
 
 const _log = (...args) => {
@@ -24,10 +25,13 @@ class Server {
   readyServer() {
     _log('readyServer');
     {
-      const router = express.router();
+      const app = express();
 
-      const server = express.app();
-      server.listen(this.port);
+      const router = express.Router();
+      _log('Router');
+
+      app.on('/', router);
+      app.listen(this.port);
     }
   }
 
@@ -39,9 +43,24 @@ class Server {
   readySocket() {
     _log('readySocket');
     {
-      const socket = socket('0.0.0.0', this.orgport);
+      const server = net.createServer((c) => {
+        _log('socket create server');
 
-      this.socket = socket;
+        c.on('end', () => {
+          _log('client disconnect');
+        });
+
+        _log('socket', c);
+        //c.write('hello\r\n');
+        //c.pipe(c);
+      });
+      server.on('error', (err) => {
+        throw err;
+      });
+      server.listen(this.orgport, () => {
+        _log('listen');
+      });
+      this.socket = server;
     }
   }
 

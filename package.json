@@ -5,7 +5,11 @@
   "type": "module",
   "main": "src/main.mjs",
   "scripts": {
+    "start": "node src/main.mjs",
     "test": "echo test"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "ws": "^8.18.3"
   }
 }
-
