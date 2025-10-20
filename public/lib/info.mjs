@@ -3,6 +3,23 @@ export class Util {
 
 }
 
+export class Role {
+  /** 役職としての人狼 */
+  static WEREWOLF = 'WEREWOLF';
+  /** 役職としての村人 */
+  static VILLAGER = 'VILLAGER';
+  static SEER = 'SEER';
+  static MEDIUM = 'MEDIUM';
+  static BODYGUARD = 'BODYGUARD';
+  static POSSESSED = 'POSSESSED';
+  static FOX = 'FOX';
+  static FREEMASON = 'FREEMASON';
+  /** Uncertain */
+  static UNC = 'UNC';
+  /** Wildcard */
+  static ANY = 'ANY';
+}
+
 export class Vote {
   constructor() {
     this.agent = 1;
