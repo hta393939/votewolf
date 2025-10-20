@@ -191,6 +191,16 @@ class Server {
     });
   }
 
+  /**
+   * 
+   * @param {Object} res 
+   * @param {number} res.agentIdx indexと言っているが実際には1-15
+   */
+  getAgentByRes(res) {
+    const agentIdx = res.agentIdx;
+    return this.agents.find(a => a.idnumber === agentIdx);
+  }
+
   async readyRound() {
     _log('readyRound');
 
@@ -223,6 +233,7 @@ class Server {
             role = Role.SEER;
           }
           this.gameInfo.roleMap[v.idstr] = role;
+          v.role = role;
         }
 /*
         const roleset = new RoleSet();
@@ -276,7 +287,7 @@ class Server {
           obj.gameInfo.day = i;
           obj.gameInfo.agent = a.idnumber;
           await this.req(a, obj);
-          _log('daily_initialize');
+          _log('daily_initialize', i);
         }
 
         for (let j = 0; j < this.gameSetting.maxTalkTurn; ++j) {
@@ -295,12 +306,13 @@ class Server {
             //obj.gameInfo.turn = j;
             obj.gameInfo.day = i;
             obj.gameInfo.agent = a.idnumber;
-            const res = await this.reqres(a, obj);
+            /** @type {string} */
+            const res = `${await this.reqres(a, obj)}`;
             _log('talk ', j, res);
 
-            if (res === 'Over') {
+            if (res.startsWith('Over')) {
               a.isOver = true;
-            } else if (res === 'Skip') {
+            } else if (res.startsWith('Skip')) {
               a.skipCount += 1;
               if (a.skipCount >= 3) {
                 a.isOver = true;
@@ -330,8 +342,7 @@ class Server {
               const resobj = JSON.parse(res);
               _log('vote obj', resobj);
 
-              const agentIdx = resobj.agentIdx;
-              const agent = this.agents[agentIdx];
+              const agent = this.getAgentByRes(resobj);
               if (agent) {
                 agent.voteCount += 1;
               } else {
@@ -346,23 +357,22 @@ class Server {
             /** @type {number[]} */
             let maxIndex = [];
             let maxCount = -1;
-            for (let idx = 0; idx < this.agents.length; ++idx) {
-              const a = this.agents[idx];
+            for (const a of this.agents) {
               if (a.agentStatus !== RoleSet.AST_ALIVE) {
                 continue;
               }
               if (a.voteCount > maxCount) {
                 maxCount = a.voteCount;
-                maxIndex = [idx];
+                maxIndex = [a.idnumber];
               } else if (a.voteCount === maxCount) {
-                maxIndex.push(idx);
+                maxIndex.push(a.idnumber);
               }
             }
 
             if (maxIndex.length === 1) {
               const exeIndex = maxIndex[0];
               this.gameInfo.executedAgent = exeIndex;
-              const agent = this.agents[exeIndex];
+              const agent = this.getAgentByRes({agentIdx: exeIndex});
               if (agent) {
                 agent.agentStatus = RoleSet.AST_DEAD;
               } else {
@@ -372,6 +382,7 @@ class Server {
             }
 
             { // 同票有り
+              _log('同数票', maxIndex);
             }
           }
 
@@ -394,13 +405,12 @@ class Server {
             try {
               const resobj = JSON.parse(res);
               _log('divine obj', resobj);
-              const divineIndex = resobj.agentIdx;
-              const agent = this.agents[divineIndex];
+              const agent = this.getAgentByRes(resobj);
               if (agent) {
                 const result = this.gameInfo.divineResult;
                 result.day = i;
-                result.target = divineIndex;
-                result.agent = 0;
+                result.target = agent.idnumber;
+                result.agent = a.idnumber;
                 result.result = agent.species;
               } else {
                 _warn('divine', divineIndex);
@@ -428,7 +438,7 @@ class Server {
             try {
               const resobj = JSON.parse(res);
               _log('guard obj', resobj);
-              const agent = this.agents[resobj.agentIdx];
+              const agent = this.getAgentByRes(resobj);
               if (agent) {
                 this.gameInfo.guardedAgent = agent.idnumber;
               }
@@ -459,10 +469,34 @@ class Server {
             try {
               const resobj = JSON.parse(res);
               _log('attack obj', resobj);
+              const agent = this.getAgentByRes(resobj);
+              if (agent) {
+                agent.attackCount += 1;
+              } else {
+                _warn('wolf');
+              }
             } catch (ec) {
 
             }
           }
+
+          /** @type {number[]} */
+          let maxIndex = [];
+          let maxCount = -1;
+          for (const a of chars) {
+            if (a.attackCount > maxCount) {
+              maxCount = a.attackCount;
+              maxIndex = [a.idnumber];
+            } else if (a.attackCount === maxCount) {
+              maxIndex.push(a.idnumber);
+            }
+          }
+          if (maxIndex.length === 1) {
+            // 1つ決定
+          } else {
+            // 複数
+          }
+
         }
 
         for (const a of this.agents) {
@@ -476,11 +510,12 @@ class Server {
           obj.gameInfo.day = i;
           obj.gameInfo.agent = a.idnumber;
           await this.req(a, obj);
-          _log('daily_finish');
+          _log('daily_finish', i);
         }
 
       }
 
+      _log('end');
     }
   }
 
