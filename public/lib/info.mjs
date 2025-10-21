@@ -3,6 +3,7 @@ export class Util {
 
 }
 
+
 export class Role {
   /** 役職としての人狼 */
   static WEREWOLF = 'WEREWOLF';
@@ -18,6 +19,21 @@ export class Role {
   static UNC = 'UNC';
   /** Wildcard */
   static ANY = 'ANY';
+}
+
+export class Species {
+  /** 種族としての人間 */
+  static HUMAN = 'HUMAN';
+  /** 種族としての人狼 */
+  static WOLF = 'WEREWOLF';
+  /** 占い結果で使用されない */
+  static FOX = 'FOX';
+}
+
+export class Status {
+  static UNC = 'UNC';
+  static ALIVE = 'ALIVE';
+  static DEAD = 'DEAD';
 }
 
 export class Vote {

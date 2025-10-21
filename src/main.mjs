@@ -35,6 +35,7 @@ class Agent {
   constructor() {
     this.socket = null;
     this.resolveFunc = () => {};
+    this.rejectFunc = () => {};
 
     /** 表示名 */
     this.descname = '';
@@ -119,11 +120,24 @@ class Server {
 
         c.on('data', data => {
           _log('on data', data);
+          try {
+            /** @type {string} */
+            let text = data.toString();
+            if (text.includes('\n')) {
+              text += 'lf';
+            } else {
+              text += 'no';
+            }
+            _log('on data text', text);
+          } catch (ec) {
+            _warn('on data catch', ec.message);
+          }
 
           if (typeof a.resolveFunc === 'function') {
             a.resolveFunc(data);
             _log('resolving');
             a.resolveFunc = null;
+            a.rejectFunc = null;
             return;
           }
         });
@@ -156,6 +170,7 @@ class Server {
   reqres(agent, sendobj) {
     return new Promise((resolve, reject) => {
       agent.resolveFunc = resolve;
+      agent.rejectFunc = reject;
 
       const str = `${JSON.stringify(sendobj)}\r\n`;
       agent.socket.write(str);
@@ -219,29 +234,39 @@ class Server {
         }
       } else {
         // 役職の設定
-        for (let i = 0; i < this.agents.length; ++i) {
-          const v = this.agents[i];
 
-          let role = Role.VILLAGER;
-          if (i === 1) {
-            //role = Role.WEREWOLF;
-          }
-          if (i === 2) {
-            role = Role.BODYGUARD;
-          }
-          if (i === 3) {
-            role = Role.SEER;
-          }
-          this.gameInfo.roleMap[v.idstr] = role;
-          v.role = role;
+        const n = this.agents.length;
+        let cards = [];
+        for (let i = 0; i < n; ++i) {
+          cards.push(i);
         }
-/*
-        const roleset = new RoleSet();
-        for (const role of roleset.roles) {
-          for (let i = 0; i < role.num; ++i) {
-
+        for (let i = 0; i < n; ++i) {
+          let index = Math.floor(Math.random() * (n - 1));
+          if (index === i) {
+            index += 1;
           }
-        } */
+          let tmp = cards[index];
+          cards[index] = cards[i];
+          cards[i] = tmp;
+        }
+
+        const roleset = new RoleSet();
+        let index = 0;
+        for (const role of roleset.roles) {
+          let rolename = role.role;
+          //if (rolename === Role.WEREWOLF) {
+          //  continue;
+          //}
+          rolename = Role.VILLAGER;
+
+          for (let j = 0; j < role.num; ++j) {
+            const a = this.agents[cards[index]];
+            this.gameInfo.roleMap[a.idstr] = rolename;
+            a.role = rolename;
+
+            index += 1;
+          }
+        }
 
       }
 
@@ -254,6 +279,8 @@ class Server {
         a.descname = res;
       }
 
+      _log('before initialize', JSON.stringify(this.gameInfo));
+
       for (const a of this.agents) {
         // py 3.12.3 でパースするとき talkHistory は Optional 宣言だが
         // KeyError が出る。
@@ -262,7 +289,7 @@ class Server {
           gameInfo: this.gameInfo,
           talkHistory: this.talkHistory,
           whisperHistory: this.whisperHistory,
-          gameSetting: this.gameSetting,
+          gameSetting: this.gameSetting, // 必要
         };
         obj.gameInfo.agent = a.idnumber;
         await this.req(a, obj);
@@ -282,7 +309,8 @@ class Server {
             gameInfo: this.gameInfo,
             talkHistory: this.talkHistory,
             whisperHistory: this.whisperHistory,
-            gameSetting: this.gameSetting,
+            //gameSetting: this.gameSetting,
+            gameSetting: null,
           };
           obj.gameInfo.day = i;
           obj.gameInfo.agent = a.idnumber;
@@ -301,7 +329,8 @@ class Server {
               gameInfo: this.gameInfo,
               talkHistory: this.talkHistory,
               whisperHistory: this.whisperHistory,
-              gameSetting: this.gameSetting,
+              //gameSetting: this.gameSetting,
+              gameSetting: null,
             };
             //obj.gameInfo.turn = j;
             obj.gameInfo.day = i;
@@ -332,7 +361,8 @@ class Server {
               gameInfo: this.gameInfo,
               talkHistory: this.talkHistory,
               whisperHistory: this.whisperHistory,
-              gameSetting: this.gameSetting,
+              gameSetting: null,
+              //gameSetting: this.gameSetting,
             };
             obj.gameInfo.day = i;
             obj.gameInfo.agent = a.idnumber;
@@ -396,7 +426,8 @@ class Server {
               gameInfo: this.gameInfo,
               talkHistory: this.talkHistory,
               whisperHistory: this.whisperHistory,
-              gameSetting: this.gameSetting,
+              //gameSetting: this.gameSetting,
+              gameSetting: null,
             };
             obj.gameInfo.day = i;
             obj.gameInfo.agent = a.idnumber;
@@ -429,7 +460,8 @@ class Server {
               gameInfo: this.gameInfo,
               talkHistory: this.talkHistory,
               whisperHistory: this.whisperHistory,
-              gameSetting: this.gameSetting,
+              //gameSetting: this.gameSetting,
+              gameSetting: null,
             };
             obj.gameInfo.day = i;
             obj.gameInfo.agent = a.idnumber;
@@ -460,7 +492,8 @@ class Server {
               gameInfo: this.gameInfo,
               talkHistory: this.talkHistory,
               whisperHistory: this.whisperHistory,
-              gameSetting: this.gameSetting,
+              //gameSetting: this.gameSetting,
+              gameSetting: null,
             };
             obj.gameInfo.day = i;
             obj.gameInfo.agent = a.idnumber;
@@ -505,7 +538,8 @@ class Server {
             gameInfo: this.gameInfo,
             talkHistory: this.talkHistory,
             whisperHistory: this.whisperHistory,
-            gameSetting: this.gameSetting,
+            //gameSetting: this.gameSetting,
+            gameSetting: null,
           };
           obj.gameInfo.day = i;
           obj.gameInfo.agent = a.idnumber;
@@ -513,6 +547,23 @@ class Server {
           _log('daily_finish', i);
         }
 
+      }
+
+      {
+        for (const a of this.agents) {
+          const obj = {
+            request: Agent.REQ_FINISH,
+            gameInfo: this.gameInfo,
+            talkHistory: this.talkHistory,
+            whisperHistory: this.whisperHistory,
+            //gameSetting: this.gameSetting,
+            gameSetting: null,
+          };
+          obj.gameInfo.day = i;
+          obj.gameInfo.agent = a.idnumber;
+          await this.req(a, obj);
+          _log('finish', i);
+        }     
       }
 
       _log('end');

@@ -1,4 +1,6 @@
 
+import {Role} from './info.mjs';
+
 export class CharSet {
   constructor() {
     this.chars = [
@@ -31,14 +33,20 @@ export class RoleSet {
   static SPECIES_HUMAN = 'HUMAN';
   /** 種族としての人狼 */
   static SPECIES_WOLF = 'WEREWOLF';
+
+  static SPECIES_FOX = 'FOX';
   /** 村チーム */
   static TEAM_VIL = 'vilteam';
   /** 狼チーム */
   static TEAM_WOLF = 'wolfteam';
+  /** 狐チーム */
+  static TEAM_FOX = 'foxteam';
+
   /** 役職としての人狼 */
   static ROLE_WEREWOLF = 'WEREWOLF';
   /** 役職としての村人 */
   static ROLE_VILLAGER = 'VILLAGER';
+
   static ROLE_SEER = 'SEER';
   static ROLE_MEDIUM = 'MEDIUM';
   static ROLE_BODYGUARD = 'BODYGUARD';
@@ -89,12 +97,14 @@ export class RoleSet {
   constructor() {
     /** 13人村の場合 */
     this.roles = [
-      {num: 6, role: RoleSet.ROLE_VILLAGER, descname: '村人', icon: '🙂', species: RoleSet.HUMAN, team: RoleSet.TEAM_VIL, thinker: VilThink},
-      {num: 1, role: RoleSet.ROLE_SEERER, descname: '占い師', icon: '🔮', species: RoleSet.HUMAN, team: RoleSet.TEAM_VIL, thinker: SeerThink},
-      {num: 1, role: RoleSet.ROLE_MEDIUM, descname: '霊媒師', icon: '⚰️', species: RoleSet.HUMAN, team: RoleSet.TEAM_VIL, thinker: MediumThink},
-      {num: 1, role: RoleSet.ROLE_BODYGUARD, descname: '狩人', icon: '🛡️', species: RoleSet.HUMAN, team: RoleSet.TEAM_VIL, thinker: GuardThink},
-      {num: 1, role: RoleSet.ROLE_POSSESSED, descname: '狂人', icon: '🤡', species: RoleSet.HUMAN, team: RoleSet.TEAM_WOLF, thinker: PossessedThink},
-      {num: 3, role: RoleSet.ROLE_WEREWOLF, descname: '人狼', icon: '🐺', species: RoleSet.WOLF, team: RoleSet.TEAM_WOLF, thinker: WolfThink},
+      {num: 6, role: Role.VILLAGER, descname: '村人', icon: '🙂', species: RoleSet.HUMAN, team: RoleSet.TEAM_VIL},
+      {num: 1, role: Role.SEER, descname: '占い師', icon: '🔮', species: RoleSet.HUMAN, team: RoleSet.TEAM_VIL},
+      {num: 1, role: Role.MEDIUM, descname: '霊媒師', icon: '⚰️', species: RoleSet.HUMAN, team: RoleSet.TEAM_VIL},
+      {num: 1, role: Role.BODYGUARD, descname: '狩人', icon: '🛡️', species: RoleSet.HUMAN, team: RoleSet.TEAM_VIL},
+      {num: 1, role: Role.POSSESSED, descname: '狂人', icon: '🤡', species: RoleSet.HUMAN, team: RoleSet.TEAM_WOLF},
+      {num: 3, role: Role.WEREWOLF, descname: '人狼', icon: '🐺', species: RoleSet.WOLF, team: RoleSet.TEAM_WOLF},
+      {num: 0, role: Role.FREEMASON, descname: '共有者', icon: '👥', species: RoleSet.HUMAN, team: RoleSet.TEAM_VIL},
+      {num: 0, role: Role.FOX, descname: '妖狐', icon: '🦊', species: RoleSet.FOX, team: RoleSet.TEAM_FOX},
     ];
   }
 }
