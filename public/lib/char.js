@@ -36,22 +36,6 @@ export class RoleSet {
   /** 狐チーム */
   static TEAM_FOX = 'foxteam';
 
-  /** 役職としての人狼 */
-  static ROLE_WEREWOLF = 'WEREWOLF';
-  /** 役職としての村人 */
-  static ROLE_VILLAGER = 'VILLAGER';
-
-  static ROLE_SEER = 'SEER';
-  static ROLE_MEDIUM = 'MEDIUM';
-  static ROLE_BODYGUARD = 'BODYGUARD';
-  static ROLE_POSSESSED = 'POSSESSED';
-  static ROLE_FOX = 'FOX';
-  static ROLE_FREEMASON = 'FREEMASON';
-  /** Uncertain */
-  static ROLE_UNC = 'UNC';
-  /** Wildcard */
-  static ROLE_ANY = 'ANY';
-
   static VERB_DIVINATION = 'DIVINATION';
   /** ガードを試みる */
   static VERB_GUARD = 'GUARD';

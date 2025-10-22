@@ -4,8 +4,12 @@ import express from 'express';
 import net from 'node:net';
 import { styleText } from 'node:util';
 
-import { GameInfo, GameSetting, Role, Status, Species } from '../public/lib/info.mjs';
+import { GameInfo, GameSetting, Role, Status, Species, Judge } from '../public/lib/info.mjs';
 import { RoleSet } from '../public/lib/char.js';
+
+const _info = (...args) => {
+  console.log(styleText(['white', 'bold'], `${[...args]}`));
+};
 
 const _log = (...args) => {
   console.log(styleText('magenta', `${[...args]}`));
@@ -13,6 +17,15 @@ const _log = (...args) => {
 
 const _warn = (...args) => {
   console.log(styleText('yellow', `${[...args]}`));
+};
+
+/**
+ * 新しいオブジェクトを返す
+ * @param {*} obj 
+ * @returns 
+ */
+const _clone = (obj) => {
+  return JSON.parse(JSON.stringify(obj));
 };
 
 
@@ -189,6 +202,34 @@ class Server {
     return null;
   }
 
+
+
+  /**
+   * 人間種は自分自身しかわからない
+   * @param {GameInfo} obj 破壊
+   * @param {string} idstr 
+   * @returns 
+   */
+  ownOnly(obj, idstr) {
+    const role = obj.roleMap[idstr];
+    obj.roleMap = {[idstr]: role};
+    return obj;
+  }
+
+  /**
+   * 人狼以外のロールを削除する
+   * @param {GameInfo} obj 破壊
+   */
+  wolfOnly(obj) {
+    const ks = Object.keys(obj.roleMap);
+    for (const k of ks) {
+      if (obj.roleMap[k] !== Role.WEREWOLF) {
+        delete obj.roleMap[k];
+      }
+    }
+    return obj;
+  }
+
   /**
    * 
    * @param {string} role 
@@ -214,6 +255,43 @@ class Server {
   getAgentByRes(res) {
     const agentIdx = res.agentIdx;
     return this.agents.find(a => a.idnumber === agentIdx);
+  }
+
+  /**
+   * 各個人用の info 加工
+   * @param {GameInfo} ininfo 
+   * @param {Agent} agent 
+   * @param {number} day
+   */
+  eachInfo(ininfo, agent, day) {
+    const obj = _clone(ininfo);
+    obj.agent = agent.idnumber;
+    obj.day = day;
+    switch (obj.role) {
+    case Role.WEREWOLF:
+      this.wolfOnly(obj);
+      break;
+
+    case Role.SEER:
+      this.ownOnly(obj, agent.idstr);
+      break;
+    case Role.MEDIUM:
+      this.ownOnly(obj, agent.idstr);
+      break;
+    case Role.BODYGUARD:
+      this.ownOnly(obj, agent.idstr);
+      break;
+
+    case Role.VILLAGER:
+    case Role.POSSESSED:
+    default:
+      this.ownOnly(obj, agent.idstr);
+      break;
+    }
+
+    // 結果伏せは未実装
+
+    return obj;
   }
 
   async readyRound() {
@@ -254,10 +332,9 @@ class Server {
         let index = 0;
         for (const role of roleset.roles) {
           let rolename = role.role;
-          //if (rolename === Role.WEREWOLF) {
-          //  continue;
-          //}
-          rolename = Role.VILLAGER;
+          if (rolename === Role.WEREWOLF) {
+            rolename = Role.VILLAGER;
+          }
 
           for (let j = 0; j < role.num; ++j) {
             const a = this.agents[cards[index]];
@@ -288,13 +365,11 @@ class Server {
         // KeyError が出る。
         const obj = {
           request: Agent.REQ_INITIALIZE,
-          gameInfo: this.gameInfo,
+          gameInfo: this.eachInfo(this.gameInfo, a, 0),
           talkHistory: this.talkHistory,
-          whisperHistory: this.whisperHistory,
+          whisperHistory: (a.role === Role.WEREWOLF) ? this.whisperHistory : [],
           gameSetting: this.gameSetting, // 必要
         };
-        obj.gameInfo.day = 0;
-        obj.gameInfo.agent = a.idnumber;
         await this.req(a, obj);
 
         //const res = await this.reqres(a, obj);
@@ -309,14 +384,12 @@ class Server {
 
           const obj = {
             request: Agent.REQ_DAYINIT,
-            gameInfo: this.gameInfo,
+            gameInfo: this.eachInfo(this.gameInfo, a, i),
             talkHistory: this.talkHistory,
-            whisperHistory: this.whisperHistory,
+            whisperHistory: (a.role === Role.WEREWOLF) ? this.whisperHistory : [],
             //gameSetting: this.gameSetting,
             gameSetting: null,
           };
-          obj.gameInfo.day = i;
-          obj.gameInfo.agent = a.idnumber;
           await this.req(a, obj);
           _log('daily_initialize, day', i);
         }
@@ -329,15 +402,13 @@ class Server {
 
             const obj = {
               request: Agent.REQ_TALK,
-              gameInfo: this.gameInfo,
+              gameInfo: this.eachInfo(this.gameInfo, a, i),
               talkHistory: this.talkHistory,
-              whisperHistory: this.whisperHistory,
+              whisperHistory: (a.role === Role.WEREWOLF) ? this.whisperHistory : [],
               //gameSetting: this.gameSetting,
               gameSetting: null,
             };
             //obj.gameInfo.turn = j;
-            obj.gameInfo.day = i;
-            obj.gameInfo.agent = a.idnumber;
             /** @type {string} */
             const res = `${await this.reqres(a, obj)}`;
             _log('talk ', j, res);
@@ -361,14 +432,12 @@ class Server {
           for (const a of this.agents) {
             const obj = {
               request: Agent.REQ_VOTE,
-              gameInfo: this.gameInfo,
+              gameInfo: this.eachInfo(this.gameInfo, a, i),
               talkHistory: this.talkHistory,
-              whisperHistory: this.whisperHistory,
+              whisperHistory: (a.role === Role.WEREWOLF) ? this.whisperHistory : [],
               gameSetting: null,
               //gameSetting: this.gameSetting,
             };
-            obj.gameInfo.day = i;
-            obj.gameInfo.agent = a.idnumber;
             const res = await this.reqres(a, obj);
             _log('vote', a.index, res);
             try {
@@ -409,6 +478,8 @@ class Server {
               const agent = this.getAgentByRes({agentIdx: exeIndex});
               if (agent) {
                 agent.agentStatus = Status.DEAD;
+
+                _info('処刑', exeIndex, agent.descname);
               } else {
                 _warn('execute', exeIndex);
               }
@@ -422,31 +493,36 @@ class Server {
 
         } while (false);
 
+        // 夜
         { // seer
           const chars = this.getAgentsByRole(Role.SEER);
           for (const a of chars) {
             const obj = {
               request: Agent.REQ_DIVINE,
-              gameInfo: this.gameInfo,
+              gameInfo: this.eachInfo(this.gameInfo, a, i),
               talkHistory: this.talkHistory,
-              whisperHistory: this.whisperHistory,
+              whisperHistory: [],
+              //whisperHistory: this.whisperHistory,
               //gameSetting: this.gameSetting,
               gameSetting: null,
             };
-            obj.gameInfo.day = i;
-            obj.gameInfo.agent = a.idnumber;
             const res = await this.reqres(a, obj);
             _log('divine', a.index, res);
             try {
               const resobj = JSON.parse(res);
               _log('divine obj', resobj);
-              const agent = this.getAgentByRes(resobj);
-              if (agent) {
-                const result = this.gameInfo.divineResult;
+              const target = this.getAgentByRes(resobj);
+              if (target) {
+                const result = new Judge();
+                this.gameInfo.divineResult = result;
                 result.day = i;
-                result.target = agent.idnumber;
+                result.target = target.idnumber;
                 result.agent = a.idnumber;
-                result.result = agent.species;
+                if (target.status === Status.ALIVE) {
+                  result.result = target.species;
+                } else {
+                  result.result = Status.UNC;
+                }
               } else {
                 _warn('divine', divineIndex);
               }
@@ -461,22 +537,21 @@ class Server {
           for (const a of chars) {
             const obj = {
               request: Agent.REQ_GUARD,
-              gameInfo: this.gameInfo,
+              gameInfo: this.eachInfo(this.gameInfo, a, i),
               talkHistory: this.talkHistory,
-              whisperHistory: this.whisperHistory,
+              whisperHistory: [],
+              //whisperHistory: this.whisperHistory,
               //gameSetting: this.gameSetting,
               gameSetting: null,
             };
-            obj.gameInfo.day = i;
-            obj.gameInfo.agent = a.idnumber;
             const res = await this.reqres(a, obj);
             _log('guard', a.index, res);
             try {
               const resobj = JSON.parse(res);
               _log('guard obj', resobj);
-              const agent = this.getAgentByRes(resobj);
-              if (agent) {
-                this.gameInfo.guardedAgent = agent.idnumber;
+              const target = this.getAgentByRes(resobj);
+              if (target) {
+                this.gameInfo.guardedAgent = target.idnumber;
               }
             } catch (ec) {
 
@@ -490,17 +565,18 @@ class Server {
           }
 
           const chars = this.getAgentsByRole(Role.WEREWOLF);
+
+          // [ ] whisper
+
           for (const a of chars) {
             const obj = {
               request: Agent.REQ_ATTACK,
-              gameInfo: this.gameInfo,
+              gameInfo: this.eachInfo(this.gameInfo, a, i),
               talkHistory: this.talkHistory,
               whisperHistory: this.whisperHistory,
               //gameSetting: this.gameSetting,
               gameSetting: null,
             };
-            obj.gameInfo.day = i;
-            obj.gameInfo.agent = a.idnumber;
             const res = await this.reqres(a, obj);
             _log('attack', a.index, res);
             try {
@@ -530,8 +606,10 @@ class Server {
           }
           if (maxIndex.length === 1) {
             // 1つ決定
+            // [ ] 未実装
           } else {
             // 複数
+            // [ ] 未実装
           }
 
         }
@@ -539,14 +617,12 @@ class Server {
         for (const a of this.agents) {
           const obj = {
             request: Agent.REQ_DAYFIN,
-            gameInfo: this.gameInfo,
+            gameInfo: this.eachInfo(this.gameInfo, a, i),
             talkHistory: this.talkHistory,
-            whisperHistory: this.whisperHistory,
+            whisperHistory: (a.role === Role.WEREWOLF) ? this.whisperHistory : [],
             //gameSetting: this.gameSetting,
             gameSetting: null,
           };
-          obj.gameInfo.day = i;
-          obj.gameInfo.agent = a.idnumber;
           await this.req(a, obj);
           _log('daily_finish', i);
         }
@@ -557,11 +633,11 @@ class Server {
         for (const a of this.agents) {
           const obj = {
             request: Agent.REQ_FINISH,
-            gameInfo: this.gameInfo,
+            gameInfo: this.gameInfo, // 最終結果は全員に通知してよいはず
             talkHistory: this.talkHistory,
             whisperHistory: this.whisperHistory,
-            //gameSetting: this.gameSetting,
-            gameSetting: null,
+            gameSetting: this.gameSetting,
+            //gameSetting: null,
           };
           obj.gameInfo.agent = a.idnumber;
           await this.req(a, obj);
