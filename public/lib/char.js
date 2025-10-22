@@ -1,5 +1,5 @@
 
-import {Role} from './info.mjs';
+import {Role, Species, Status} from './info.mjs';
 
 export class CharSet {
   constructor() {
@@ -29,12 +29,6 @@ export class CharSet {
 }
 
 export class RoleSet {
-  /** 種族としての人間 */
-  static SPECIES_HUMAN = 'HUMAN';
-  /** 種族としての人狼 */
-  static SPECIES_WOLF = 'WEREWOLF';
-
-  static SPECIES_FOX = 'FOX';
   /** 村チーム */
   static TEAM_VIL = 'vilteam';
   /** 狼チーム */
@@ -90,21 +84,17 @@ export class RoleSet {
   static OP_OR = 'OR';
   static OP_XOR = 'XOR';
 
-  static AST_UNC = 'UNC';
-  static AST_ALIVE = 'ALIVE';
-  static AST_DEAD = 'DEAD';
-
   constructor() {
-    /** 13人村の場合 */
+    /** 15人村の場合 */
     this.roles = [
-      {num: 6, role: Role.VILLAGER, descname: '村人', icon: '🙂', species: RoleSet.HUMAN, team: RoleSet.TEAM_VIL},
-      {num: 1, role: Role.SEER, descname: '占い師', icon: '🔮', species: RoleSet.HUMAN, team: RoleSet.TEAM_VIL},
-      {num: 1, role: Role.MEDIUM, descname: '霊媒師', icon: '⚰️', species: RoleSet.HUMAN, team: RoleSet.TEAM_VIL},
-      {num: 1, role: Role.BODYGUARD, descname: '狩人', icon: '🛡️', species: RoleSet.HUMAN, team: RoleSet.TEAM_VIL},
-      {num: 1, role: Role.POSSESSED, descname: '狂人', icon: '🤡', species: RoleSet.HUMAN, team: RoleSet.TEAM_WOLF},
-      {num: 3, role: Role.WEREWOLF, descname: '人狼', icon: '🐺', species: RoleSet.WOLF, team: RoleSet.TEAM_WOLF},
-      {num: 0, role: Role.FREEMASON, descname: '共有者', icon: '👥', species: RoleSet.HUMAN, team: RoleSet.TEAM_VIL},
-      {num: 0, role: Role.FOX, descname: '妖狐', icon: '🦊', species: RoleSet.FOX, team: RoleSet.TEAM_FOX},
+      {num: 6+2, role: Role.VILLAGER, descname: '村人', icon: '🙂', species: Species.HUMAN, team: RoleSet.TEAM_VIL},
+      {num: 1, role: Role.SEER, descname: '占い師', icon: '🔮', species: Species.HUMAN, team: RoleSet.TEAM_VIL},
+      {num: 1, role: Role.MEDIUM, descname: '霊媒師', icon: '⚰️', species: Species.HUMAN, team: RoleSet.TEAM_VIL},
+      {num: 1, role: Role.BODYGUARD, descname: '狩人', icon: '🛡️', species: Species.HUMAN, team: RoleSet.TEAM_VIL},
+      {num: 1, role: Role.POSSESSED, descname: '狂人', icon: '🤡', species: Species.HUMAN, team: RoleSet.TEAM_WOLF},
+      {num: 3, role: Role.WEREWOLF, descname: '人狼', icon: '🐺', species: Species.WOLF, team: RoleSet.TEAM_WOLF},
+      {num: 0, role: Role.FREEMASON, descname: '共有者', icon: '👥', species: Species.HUMAN, team: RoleSet.TEAM_VIL},
+      {num: 0, role: Role.FOX, descname: '妖狐', icon: '🦊', species: Species.FOX, team: RoleSet.TEAM_FOX},
     ];
   }
 }
@@ -118,7 +108,7 @@ export class SpeciesCheck {
     this.day = 1;
     /** round内で固定のインデックス。詰めない。*/
     this.agentIndex = 0;
-    this.resultSpecies = RoleSet.SPECIES_HUMAN;
+    this.resultSpecies = Species.HUMAN;
     /** 狩人だった場合にGJが出たらtrueにする。人間種族ということにもなる(狂人の可能性もある) */
     this.guardSuccess = false;
   }
@@ -129,12 +119,12 @@ export class Char {
     /** 表示名 */
     this.descname = '🐱ねこた';
 
-    this.role = RoleSet.ROLE_VILLAGER;
+    this.role = Role.VILLAGER;
     this.team = RoleSet.TEAM_VIL;
-    this.species = RoleSet.SPECIES_HUMAN;
+    this.species = Species.HUMAN;
     this.alive = true;
     /** エージェントのステータス */
-    this.agentStatus = RoleSet.AST_ALIVE;
+    this.agentStatus = Status.ALIVE;
 
     /** 占いや霊媒で得る非公開情報。狼もここ */
     this.closeInfo = {};

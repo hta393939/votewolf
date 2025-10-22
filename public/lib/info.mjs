@@ -32,7 +32,9 @@ export class Species {
 
 export class Status {
   static UNC = 'UNC';
+  /** 生存 */
   static ALIVE = 'ALIVE';
+  /** 死亡 */
   static DEAD = 'DEAD';
 }
 
@@ -60,7 +62,7 @@ export class Judge {
     this.day = 1;
     this.target = 1;
     /** species */
-    this.result = 'HUMAN';
+    this.result = Species.HUMAN;
   }
 }
 
@@ -69,27 +71,34 @@ export class Judge {
  */
 export class GameInfo {
   constructor() {
-    /** 多分これ */
+    /** あなたが誰か @type {number} */
     this.agent = 1;
     /** @type {Vote[]} */
     this.attackVoteList = [];
-    this.attackedAgent = 1;
-    this.cursedFox = 0;
+    /** @type {number} */
+    this.attackedAgent = -1;
+    /** @type {number} */
+    this.cursedFox = -1;
+    /** 何日めか @type {number} */
     this.day = 1;
-    /** @type {Judge} */
-    this.divineResult = new Judge();
-    this.executedAgent = 1;
+    /** @type {Judge|null} */
+    this.divineResult = null;
+    /** @type {number} */
+    this.executedAgent = -1;
     /** @type {string[]} */
     this.existingRoleList = [];
-    this.guardedAgent = 1;
+    /** @type {number} */
+    this.guardedAgent = -1;
     /** @type {number[]} */
     this.lastDeadAgentList = [];
     /** @type {Vote[]} */
     this.latestAttackVoteList = [];
-    this.latestExecutedAgent = 1;
+    /** @type {number} */
+    this.latestExecutedAgent = -1;
     /** @type {Vote[]} */
     this.latestVoteList = [];
-    this.mediumResult = new Judge();
+    /** @type {Judge|null} */
+    this.mediumResult = null;
     /** @type {Object<string,number>} */
     this.remainTalkMap = {};
     /** @type {Object<string,number} */

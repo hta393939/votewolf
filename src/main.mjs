@@ -4,7 +4,7 @@ import express from 'express';
 import net from 'node:net';
 import { styleText } from 'node:util';
 
-import { GameInfo, GameSetting, Role } from '../public/lib/info.mjs';
+import { GameInfo, GameSetting, Role, Status, Species } from '../public/lib/info.mjs';
 import { RoleSet } from '../public/lib/char.js';
 
 const _log = (...args) => {
@@ -48,11 +48,11 @@ class Agent {
 
     this.skipCount = 0;
     this.isOver = false;
-    this.agentStatus = RoleSet.AST_ALIVE;
+    this.agentStatus = Status.ALIVE;
     this.voteCount = 0;
     this.attackCount = 0;
 
-    this.species = RoleSet.SPECIES_HUMAN;
+    this.species = Species.HUMAN;
   }
 }
 
@@ -199,7 +199,7 @@ class Server {
       if (a.role !== role) {
         return false;
       }
-      if (a.agentStatus !== RoleSet.AST_ALIVE) {
+      if (a.agentStatus !== Status.ALIVE) {
         return false;
       }
       return true;
@@ -240,9 +240,9 @@ class Server {
         for (let i = 0; i < n; ++i) {
           cards.push(i);
         }
-        for (let i = 0; i < n; ++i) {
+        for (let i = 0; i < n - 1; ++i) {
           let index = Math.floor(Math.random() * (n - 1));
-          if (index === i) {
+          if (index >= i) {
             index += 1;
           }
           let tmp = cards[index];
@@ -263,6 +263,8 @@ class Server {
             const a = this.agents[cards[index]];
             this.gameInfo.roleMap[a.idstr] = rolename;
             a.role = rolename;
+
+            this.gameInfo.statusMap[a.idstr] = Status.ALIVE;
 
             index += 1;
           }
@@ -291,6 +293,7 @@ class Server {
           whisperHistory: this.whisperHistory,
           gameSetting: this.gameSetting, // 必要
         };
+        obj.gameInfo.day = 0;
         obj.gameInfo.agent = a.idnumber;
         await this.req(a, obj);
 
@@ -315,7 +318,7 @@ class Server {
           obj.gameInfo.day = i;
           obj.gameInfo.agent = a.idnumber;
           await this.req(a, obj);
-          _log('daily_initialize', i);
+          _log('daily_initialize, day', i);
         }
 
         for (let j = 0; j < this.gameSetting.maxTalkTurn; ++j) {
@@ -388,7 +391,7 @@ class Server {
             let maxIndex = [];
             let maxCount = -1;
             for (const a of this.agents) {
-              if (a.agentStatus !== RoleSet.AST_ALIVE) {
+              if (a.agentStatus !== Status.ALIVE) {
                 continue;
               }
               if (a.voteCount > maxCount) {
@@ -402,9 +405,10 @@ class Server {
             if (maxIndex.length === 1) {
               const exeIndex = maxIndex[0];
               this.gameInfo.executedAgent = exeIndex;
+              this.gameInfo.statusMap[`${exeIndex}`] = Status.DEAD;
               const agent = this.getAgentByRes({agentIdx: exeIndex});
               if (agent) {
-                agent.agentStatus = RoleSet.AST_DEAD;
+                agent.agentStatus = Status.DEAD;
               } else {
                 _warn('execute', exeIndex);
               }
@@ -559,14 +563,13 @@ class Server {
             //gameSetting: this.gameSetting,
             gameSetting: null,
           };
-          obj.gameInfo.day = i;
           obj.gameInfo.agent = a.idnumber;
           await this.req(a, obj);
-          _log('finish', i);
+          _log('round finish');
         }     
       }
 
-      _log('end');
+      _log('end', JSON.stringify(this.gameInfo));
     }
   }
 
