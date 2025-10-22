@@ -294,6 +294,28 @@ class Server {
     return obj;
   }
 
+  checkWin() {
+    const alive = {[Species.HUMAN]: 0, [Species.WEREWOLF]: 0};
+    for (const a of this.agents) {
+      if (a.status !== Status.ALIVE) {
+        continue;
+      }
+      if (a.species === Species.HUMAN) {
+        alive[Species.HUMAN] += 1;
+      } else if (a.species === Species.WEREWOLF) {
+        alive[Species.WEREWOLF] += 1;
+      }
+    }
+
+    if (alive[Species.WEREWOLF] === 0) {
+      return RoleSet.TEAM_VIL;
+    }
+    if (alive[Species.WEREWOLF] >= alive[Species.HUMAN]) {
+      return RoleSet.TEAM_WOLF;
+    }
+    return null;
+  }
+
   async readyRound() {
     _log('readyRound');
 
@@ -564,55 +586,66 @@ class Server {
             a.attackCount = 0;
           }
 
+          let targetNumber = -1;
           const chars = this.getAgentsByRole(Role.WEREWOLF);
+          do {
+            // [ ] whisper
 
-          // [ ] whisper
+            for (const a of chars) {
+              const obj = {
+                request: Agent.REQ_ATTACK,
+                gameInfo: this.eachInfo(this.gameInfo, a, i),
+                talkHistory: this.talkHistory,
+                whisperHistory: this.whisperHistory,
+                //gameSetting: this.gameSetting,
+                gameSetting: null,
+              };
+              const res = await this.reqres(a, obj);
+              _log('attack', a.index, res);
+              try {
+                const resobj = JSON.parse(res);
+                _log('attack obj', resobj);
+                const agent = this.getAgentByRes(resobj);
+                if (agent) {
+                  agent.attackCount += 1;
+                } else {
+                  _warn('wolf');
+                }
+              } catch (ec) {
 
-          for (const a of chars) {
-            const obj = {
-              request: Agent.REQ_ATTACK,
-              gameInfo: this.eachInfo(this.gameInfo, a, i),
-              talkHistory: this.talkHistory,
-              whisperHistory: this.whisperHistory,
-              //gameSetting: this.gameSetting,
-              gameSetting: null,
-            };
-            const res = await this.reqres(a, obj);
-            _log('attack', a.index, res);
-            try {
-              const resobj = JSON.parse(res);
-              _log('attack obj', resobj);
-              const agent = this.getAgentByRes(resobj);
-              if (agent) {
-                agent.attackCount += 1;
-              } else {
-                _warn('wolf');
               }
-            } catch (ec) {
-
             }
-          }
 
-          /** @type {number[]} */
-          let maxIndex = [];
-          let maxCount = -1;
-          for (const a of chars) {
-            if (a.attackCount > maxCount) {
-              maxCount = a.attackCount;
-              maxIndex = [a.idnumber];
-            } else if (a.attackCount === maxCount) {
-              maxIndex.push(a.idnumber);
+            /** @type {number[]} */
+            let maxIndex = [];
+            let maxCount = -1;
+            for (const a of chars) {
+              if (a.attackCount > maxCount) {
+                maxCount = a.attackCount;
+                maxIndex = [a.idnumber];
+              } else if (a.attackCount === maxCount) {
+                maxIndex.push(a.idnumber);
+              }
             }
-          }
-          if (maxIndex.length === 1) {
-            // 1つ決定
-            // [ ] 未実装
-          } else {
-            // 複数
-            // [ ] 未実装
+            if (maxIndex.length === 1) {
+              // 1つ決定
+              targetNumber = maxIndex[0];
+              break;
+            } else {
+              // 複数
+              // [ ] 未実装
+            }
+          } while (false);
+
+          if (targetNumber >= 0) {
+            // ガード判定
+            // 未実装
           }
 
         }
+
+        // [ ] 夜セットするのか? 朝セットするのか?
+        // ゲーム配信進行上は被害者は朝公開されることが多い
 
         for (const a of this.agents) {
           const obj = {
@@ -627,7 +660,7 @@ class Server {
           _log('daily_finish', i);
         }
 
-      }
+      } // 日のループ最後
 
       {
         for (const a of this.agents) {

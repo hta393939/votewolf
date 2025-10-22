@@ -25,9 +25,11 @@ export class Species {
   /** 種族としての人間 */
   static HUMAN = 'HUMAN';
   /** 種族としての人狼 */
-  static WOLF = 'WEREWOLF';
+  static WEREWOLF = 'WEREWOLF';
   /** 占い結果で使用されない */
   static FOX = 'FOX';
+
+  static UNC = 'UNC';
 }
 
 export class Status {

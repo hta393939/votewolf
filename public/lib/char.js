@@ -76,7 +76,7 @@ export class RoleSet {
       {num: 1, role: Role.MEDIUM, descname: '霊媒師', icon: '⚰️', species: Species.HUMAN, team: RoleSet.TEAM_VIL},
       {num: 1, role: Role.BODYGUARD, descname: '狩人', icon: '🛡️', species: Species.HUMAN, team: RoleSet.TEAM_VIL},
       {num: 1, role: Role.POSSESSED, descname: '狂人', icon: '🤡', species: Species.HUMAN, team: RoleSet.TEAM_WOLF},
-      {num: 3, role: Role.WEREWOLF, descname: '人狼', icon: '🐺', species: Species.WOLF, team: RoleSet.TEAM_WOLF},
+      {num: 3, role: Role.WEREWOLF, descname: '人狼', icon: '🐺', species: Species.WEREWOLF, team: RoleSet.TEAM_WOLF},
       {num: 0, role: Role.FREEMASON, descname: '共有者', icon: '👥', species: Species.HUMAN, team: RoleSet.TEAM_VIL},
       {num: 0, role: Role.FOX, descname: '妖狐', icon: '🦊', species: Species.FOX, team: RoleSet.TEAM_FOX},
     ];
