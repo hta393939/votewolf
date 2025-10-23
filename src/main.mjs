@@ -1,8 +1,6 @@
 
-//import ws from 'ws';
 import express from 'express';
-import net from 'node:net';
-import { styleText } from 'node:util';
+import expressWs from 'express-ws';
 
 import { GameInfo, GameSetting, Role, Status, Species, Judge,
   Vote,
@@ -10,6 +8,10 @@ import { GameInfo, GameSetting, Role, Status, Species, Judge,
  } from '../public/lib/info.mjs';
 import { RoleSet } from '../public/lib/char.js';
 import { Dice } from '../public/lib/dice.js';
+
+import net from 'node:net';
+import { styleText } from 'node:util';
+import path from 'node:path';
 
 const _info = (...args) => {
   console.log(styleText(['white', 'bold'], `${[...args]}`));
@@ -89,6 +91,8 @@ class Server {
     this.gameInfo = new GameInfo();
     this.talkHistory = [];
     this.whisperHistory = [];
+
+    this.wscs = [];
   }
 
   initialize() {
@@ -98,23 +102,51 @@ class Server {
     this.readyServer();
   }
 
+  sendWC(inobj) {
+    const text = JSON.stringify(inobj);
+    for (const ws of this.wscs) {
+      ws.send(text);
+    }
+  }
+
   readyServer() {
     _log('readyServer');
+
+    const dirname = import.meta.dirname;
     {
       const app = express();
+      expressWs(app);
+
 
       const router = express.Router();
       _log('Router');
 
-      app.on('/', router);
-
-      app.on('/', express.static('../public'));
-
       {
-        const ws = null;
+        expressWs(router);
+
+        router.ws('/test', (ws, req) => {
+          ws.on('message', msg => {
+            _log('ws', msg, ws);
+          });
+          ws.on('close', () => {
+            _log('ws close');
+          });
+          ws.on('disconnect', () => {
+            _log('ws disconnect');
+          });
+
+          this.wscs.push(ws);
+        });
+
       }
 
-      app.listen(this.port);
+      app.use('/websocket', router);
+
+      app.use('/', express.static(path.resolve(dirname, '../public')));
+
+      app.listen(this.port, '0.0.0.0', err => {
+        _log('listen', this.port, err);
+      });
     }
   }
 
@@ -128,7 +160,7 @@ class Server {
 
         if (len >= this.roundAgentNum) {
           // close する
-          c.close();
+          c.end();
           return;
         }
 
@@ -181,6 +213,18 @@ class Server {
     }
   }
 
+  finish() {
+    for (const a of this.agents) {
+      if (a.socket.end) {
+        _log('end()');
+        a.socket.end();
+      }
+      a.socket.close?.();
+      a.socket = null;
+    }
+    this.agents = [];
+  }
+
   /**
    * 
    * @param {Agent} agent 
@@ -193,6 +237,11 @@ class Server {
 
       const str = `${JSON.stringify(sendobj)}\r\n`;
       agent.socket.write(str);
+
+      if (true) {
+        this.sendWC(sendobj);
+      }
+
     });
   }
 
@@ -205,6 +254,11 @@ class Server {
   async req(agent, sendobj) {
     const str = `${JSON.stringify(sendobj)}\r\n`;
     agent.socket.write(str);
+
+    if (true) {
+      this.sendWC(sendobj);
+    }
+
     return null;
   }
 
@@ -336,6 +390,8 @@ class Server {
   async readyRound() {
     _log('readyRound');
 
+    this.dice.init(this.gameSetting.randomSeed);
+
     this.talkHistory = [];
     this.whisperHistory = [];
     this.gameInfo.day = 0;
@@ -427,7 +483,13 @@ class Server {
         this.gameInfo.talkList = [];
         this.gameInfo.whisperList = [];
 
-        // 未実装 昨晩の結果の反映
+        { // 未実装 昨晩の結果の反映
+          // 投票
+          // 襲撃
+          // 占い
+          // 霊媒
+          // ガード
+        }
 
         for (const a of this.agents) {
           a.isOver = false;

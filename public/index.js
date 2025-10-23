@@ -23,6 +23,8 @@ class Misc {
     this.loopStatus = Misc.LOOP_TALK;
     this.dice = null;
 
+    this.ws = null;
+
     this.log = new Log();
   }
 
@@ -30,6 +32,7 @@ class Misc {
 
 
     this.update();
+    this.intervalFunc();
   }
 
   update() {
@@ -201,7 +204,7 @@ class Misc {
    * 
    * @param {HTMLCanvasElement} canvas 
    */
-  drawRest(canvas) {
+  drawRest(/*canvas*/) {
     const canvas = document.getElementById('canvas1');
     const w = 512;
     const h = 512;
@@ -223,6 +226,50 @@ class Misc {
       c.fillText(a.descname, x, y);
     }
 
+  }
+
+  initSocket() {
+    console.log('initSocket');
+    const ws = new WebSocket('/websocket/test');
+    this.ws = ws;
+    this.addListener(ws);
+  }
+
+  intervalFunc() {
+    setTimeout(() => {
+      this.intervalFunc();
+    }, 2000);
+
+    if (!this.ws) {
+      this.initSocket();
+    }
+  }
+
+  /**
+   * 
+   * @param {WebSocket} ws 
+   */
+  addListener(ws) {
+    console.log('addListener');
+    ws.addEventListener('open', ev => {
+      console.log('open', ev);
+    });
+    ws.addEventListener('error', ev => {
+      console.log('error', ev);
+    });
+    ws.addEventListener('close', ev => {
+      console.log('close', ev);
+      this.ws = null;
+    });
+    ws.addEventListener('message', ev => {
+      try {
+        const obj = JSON.parse(ev.data);
+        this.log.log(obj);
+      } catch (ec) {
+        console.warn('message catch', ec.message);
+      }
+    });
+    console.log('addListener');
   }
 
 }
