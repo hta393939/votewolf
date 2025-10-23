@@ -42,19 +42,19 @@ export class Status {
 
 export class Vote {
   constructor() {
-    this.agent = 1;
-    this.day = 1;
-    this.target = 1;
+    this.agent = -1;
+    this.day = -1;
+    this.target = -1;
   }
 }
 
 export class Utterance {
   constructor() {
-    this.day = 1;
-    this.agent = 1;
+    this.day = -1;
+    this.agent = -1;
     this.idx = 1;
     this.text = '';
-    this.turn = 1;
+    this.turn = -1;
   }
 }
 
@@ -85,13 +85,13 @@ export class GameInfo {
     this.day = 1;
     /** @type {Judge|null} */
     this.divineResult = null;
-    /** @type {number} */
+    /** 昨日 last (night) に処刑された @type {number} */
     this.executedAgent = -1;
     /** @type {string[]} */
     this.existingRoleList = [];
     /** @type {number} */
     this.guardedAgent = -1;
-    /** @type {number[]} */
+    /** 昨日 last (night) に死んだ @type {number[]} */
     this.lastDeadAgentList = [];
     /** @type {Vote[]} */
     this.latestAttackVoteList = [];
@@ -109,11 +109,11 @@ export class GameInfo {
     this.roleMap = {};
     /** @type {Object<string,string>} */
     this.statusMap = {};
-    /** @type {Utterance[]} */
+    /** 今日のみ @type {Utterance[]} */
     this.talkList = [];
     /** @type {Vote[]} */
     this.voteList = [];
-    /** @type {Utterance[]} */
+    /** 今日のみ @type {Utterance[]} */
     this.whisperList = [];
   }
 }
@@ -123,13 +123,14 @@ export class GameSetting {
     /** 誰も襲撃しないを許可するか */
     this.enableNoAttack = false;
     /** 誰も処刑しないを許可するか */
-    this.enableNoExecution = false;
+    this.enableNoExecution = true;
     /** ロール要求を有効化する */
     this.enableRoleRequest = false;
     /** 最大襲撃再投票数 */
     this.maxAttackRevote = 1;
+    /** 再投票回数 */
     this.maxRevote = 1;
-    this.maxSkip = 8;
+    this.maxSkip = 3;
     this.maxTalk = 8;
     this.maxTalkTurn = 8;
     this.maxWhisper = 8;
@@ -148,7 +149,7 @@ export class GameSetting {
       'FOX': 0,
     };
     this.talkOnFirstDay = false;
-    /** リクエストに対する応答の最大制限 */
+    /** リクエストに対する応答の最大制限。整数 */
     this.timeLimit = 1000;
     this.validateUtterance = false;
     /** ファーストデイに投票があるか */

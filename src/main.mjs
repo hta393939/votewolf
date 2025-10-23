@@ -4,8 +4,12 @@ import express from 'express';
 import net from 'node:net';
 import { styleText } from 'node:util';
 
-import { GameInfo, GameSetting, Role, Status, Species, Judge } from '../public/lib/info.mjs';
+import { GameInfo, GameSetting, Role, Status, Species, Judge,
+  Vote,
+  Utterance,
+ } from '../public/lib/info.mjs';
 import { RoleSet } from '../public/lib/char.js';
+import { Dice } from '../public/lib/dice.js';
 
 const _info = (...args) => {
   console.log(styleText(['white', 'bold'], `${[...args]}`));
@@ -74,6 +78,8 @@ class Server {
     this.port = 3000;
     /** 元ポート */
     this.orgport = 10000;
+
+    this.dice = new Dice();
 
     this.roundAgentNum = 15;
     /** @type {Agent[]} */
@@ -207,23 +213,24 @@ class Server {
   /**
    * 人間種は自分自身しかわからない
    * @param {GameInfo} obj 破壊
-   * @param {string} idstr 
+   * @param {Agent} agent 
    * @returns 
    */
-  ownOnly(obj, idstr) {
-    const role = obj.roleMap[idstr];
-    obj.roleMap = {[idstr]: role};
+  ownOnly(obj, agent) {
+    const role = obj.roleMap[agent.idstr];
+    obj.roleMap = {[agent.idstr]: role};
     return obj;
   }
 
   /**
-   * 人狼以外のロールを削除する
+   * 指定以外のロールを削除する
    * @param {GameInfo} obj 破壊
+   * @param {string} role Role.WEREWOLF など
    */
-  wolfOnly(obj) {
+  roleOnly(obj, role) {
     const ks = Object.keys(obj.roleMap);
     for (const k of ks) {
-      if (obj.roleMap[k] !== Role.WEREWOLF) {
+      if (obj.roleMap[k] !== role) {
         delete obj.roleMap[k];
       }
     }
@@ -231,7 +238,7 @@ class Server {
   }
 
   /**
-   * 
+   * 生存のみ
    * @param {string} role 
    * @returns 
    */
@@ -261,56 +268,66 @@ class Server {
    * 各個人用の info 加工
    * @param {GameInfo} ininfo 
    * @param {Agent} agent 
-   * @param {number} day
    */
-  eachInfo(ininfo, agent, day) {
+  eachInfo(ininfo, agent) {
     const obj = _clone(ininfo);
     obj.agent = agent.idnumber;
-    obj.day = day;
-    switch (obj.role) {
+    switch (agent.role) {
+    case Role.FOX:
+    case Role.FREEMASON:
     case Role.WEREWOLF:
-      this.wolfOnly(obj);
+      this.roleOnly(obj, agent.role);
       break;
 
     case Role.SEER:
-      this.ownOnly(obj, agent.idstr);
+      this.ownOnly(obj, agent);
+      // 未実装 結果残し
       break;
     case Role.MEDIUM:
-      this.ownOnly(obj, agent.idstr);
+      this.ownOnly(obj, agent);
+      // 未実装 結果残し
       break;
     case Role.BODYGUARD:
-      this.ownOnly(obj, agent.idstr);
+      this.ownOnly(obj, agent);
+      // 未実装 結果残し
       break;
 
     case Role.VILLAGER:
     case Role.POSSESSED:
     default:
-      this.ownOnly(obj, agent.idstr);
+      this.ownOnly(obj, agent);
       break;
     }
-
-    // 結果伏せは未実装
 
     return obj;
   }
 
+  /** 勝敗チェック */
   checkWin() {
-    const alive = {[Species.HUMAN]: 0, [Species.WEREWOLF]: 0};
+    const alive = {[Species.HUMAN]: 0, [Species.WEREWOLF]: 0, [Species.FOX]: 0};
     for (const a of this.agents) {
-      if (a.status !== Status.ALIVE) {
+      if (a.agentStatus !== Status.ALIVE) {
         continue;
       }
       if (a.species === Species.HUMAN) {
         alive[Species.HUMAN] += 1;
       } else if (a.species === Species.WEREWOLF) {
         alive[Species.WEREWOLF] += 1;
+      } else if (a.species === Species.FOX) {
+        alive[Species.FOX] += 1;
       }
     }
 
     if (alive[Species.WEREWOLF] === 0) {
+      if (alive[Species.FOX] >= 1) {
+        return RoleSet.TEAM_FOX;
+      }
       return RoleSet.TEAM_VIL;
     }
     if (alive[Species.WEREWOLF] >= alive[Species.HUMAN]) {
+      if (alive[Species.FOX] >= 1) {
+        return RoleSet.TEAM_FOX;
+      }
       return RoleSet.TEAM_WOLF;
     }
     return null;
@@ -321,7 +338,9 @@ class Server {
 
     this.talkHistory = [];
     this.whisperHistory = [];
+    this.gameInfo.day = 0;
 
+    let roundResult = null;
     {
       if (this.gameSetting.enableRoleRequest) {
         // エージェントに対して役職を問い合わせる
@@ -354,14 +373,18 @@ class Server {
         let index = 0;
         for (const role of roleset.roles) {
           let rolename = role.role;
-          if (rolename === Role.WEREWOLF) {
-            rolename = Role.VILLAGER;
+          const num = role.num;
+          if (num === 0) {
+            continue;
           }
+          this.gameInfo.existingRoleList.push(rolename);
 
-          for (let j = 0; j < role.num; ++j) {
+          for (let j = 0; j < num; ++j) {
             const a = this.agents[cards[index]];
             this.gameInfo.roleMap[a.idstr] = rolename;
             a.role = rolename;
+            a.species = role.species;
+            a.agentStatus = Status.ALIVE;
 
             this.gameInfo.statusMap[a.idstr] = Status.ALIVE;
 
@@ -387,7 +410,7 @@ class Server {
         // KeyError が出る。
         const obj = {
           request: Agent.REQ_INITIALIZE,
-          gameInfo: this.eachInfo(this.gameInfo, a, 0),
+          gameInfo: this.eachInfo(this.gameInfo, a),
           talkHistory: this.talkHistory,
           whisperHistory: (a.role === Role.WEREWOLF) ? this.whisperHistory : [],
           gameSetting: this.gameSetting, // 必要
@@ -398,7 +421,13 @@ class Server {
         //_log('success init', res);
       }
 
-      for (let i = 0; i <= 2; ++i) { // 日数
+      for (let dayth = 0; dayth <= 99; ++dayth) {
+        /** 第n日め。0から始まる。0日目は特殊。 */
+        this.gameInfo.day = dayth;
+        this.gameInfo.talkList = [];
+        this.gameInfo.whisperList = [];
+
+        // 未実装 昨晩の結果の反映
 
         for (const a of this.agents) {
           a.isOver = false;
@@ -406,122 +435,200 @@ class Server {
 
           const obj = {
             request: Agent.REQ_DAYINIT,
-            gameInfo: this.eachInfo(this.gameInfo, a, i),
+            gameInfo: this.eachInfo(this.gameInfo, a),
             talkHistory: this.talkHistory,
             whisperHistory: (a.role === Role.WEREWOLF) ? this.whisperHistory : [],
             //gameSetting: this.gameSetting,
             gameSetting: null,
           };
           await this.req(a, obj);
-          _log('daily_initialize, day', i);
+          _log('daily_initialize, dayth', dayth);
         }
 
-        for (let j = 0; j < this.gameSetting.maxTalkTurn; ++j) {
-          for (const a of this.agents) {
-            if (a.isOver) {
-              continue;
-            }
+        if (this.gameSetting.talkOnFirstDay || dayth > 0) {
+          // 議論
 
-            const obj = {
-              request: Agent.REQ_TALK,
-              gameInfo: this.eachInfo(this.gameInfo, a, i),
-              talkHistory: this.talkHistory,
-              whisperHistory: (a.role === Role.WEREWOLF) ? this.whisperHistory : [],
-              //gameSetting: this.gameSetting,
-              gameSetting: null,
-            };
-            //obj.gameInfo.turn = j;
-            /** @type {string} */
-            const res = `${await this.reqres(a, obj)}`;
-            _log('talk ', j, res);
-
-            if (res.startsWith('Over')) {
-              a.isOver = true;
-            } else if (res.startsWith('Skip')) {
-              a.skipCount += 1;
-              if (a.skipCount >= 3) {
-                a.isOver = true;
-              }
-            }
-          }
-        }
-
-        do {
-          for (const a of this.agents) {
-            a.voteCount = 0;
-          }
-
-          for (const a of this.agents) {
-            const obj = {
-              request: Agent.REQ_VOTE,
-              gameInfo: this.eachInfo(this.gameInfo, a, i),
-              talkHistory: this.talkHistory,
-              whisperHistory: (a.role === Role.WEREWOLF) ? this.whisperHistory : [],
-              gameSetting: null,
-              //gameSetting: this.gameSetting,
-            };
-            const res = await this.reqres(a, obj);
-            _log('vote', a.index, res);
-            try {
-              const resobj = JSON.parse(res);
-              _log('vote obj', resobj);
-
-              const agent = this.getAgentByRes(resobj);
-              if (agent) {
-                agent.voteCount += 1;
-              } else {
-                _warn('vote', resobj);
-              }
-            } catch (ec) {
-
-            }
-          }
-
-          {
-            /** @type {number[]} */
-            let maxIndex = [];
-            let maxCount = -1;
+          for (let j = 0; j < this.gameSetting.maxTalk; ++j) {
+            let curTurnTalk = [];
             for (const a of this.agents) {
-              if (a.agentStatus !== Status.ALIVE) {
+              if (a.isOver) {
                 continue;
               }
-              if (a.voteCount > maxCount) {
-                maxCount = a.voteCount;
-                maxIndex = [a.idnumber];
-              } else if (a.voteCount === maxCount) {
-                maxIndex.push(a.idnumber);
-              }
-            }
 
-            if (maxIndex.length === 1) {
-              const exeIndex = maxIndex[0];
-              this.gameInfo.executedAgent = exeIndex;
-              this.gameInfo.statusMap[`${exeIndex}`] = Status.DEAD;
-              const agent = this.getAgentByRes({agentIdx: exeIndex});
-              if (agent) {
-                agent.agentStatus = Status.DEAD;
+              const obj = {
+                request: Agent.REQ_TALK,
+                gameInfo: this.eachInfo(this.gameInfo, a),
+                talkHistory: this.talkHistory,
+                whisperHistory: (a.role === Role.WEREWOLF) ? this.whisperHistory : [],
+                //gameSetting: this.gameSetting,
+                gameSetting: null,
+              };
+              //obj.gameInfo.turn = j;
+              /** @type {string} */
+              const res = `${await this.reqres(a, obj)}`;
+              _log('talk ', j, res);
 
-                _info('処刑', exeIndex, agent.descname);
+              if (res.startsWith('Over')) {
+                a.isOver = true;
+              } else if (res.startsWith('Skip')) {
+                a.skipCount += 1;
+                if (a.skipCount >= 3) {
+                  a.isOver = true;
+                }
               } else {
-                _warn('execute', exeIndex);
+                const talk = new Utterance();
+                talk.agent = a.idnumber;
+                talk.day = dayth;
+                talk.turn = j;
+                talk.text = res;
+                talk.idx = a.idnumber; // TODO: なんだっけ...
+                curTurnTalk.push(talk);
               }
-              break;
             }
 
-            { // 同票有り
-              _log('同数票', maxIndex);
+            this.talkHistory = curTurnTalk;
+          } // talk loop
+
+        }
+
+        // aiwolf では投票も夜扱いで説明されている
+
+        let todayVotes = [];
+        let exeIndex = -1;
+        if (dayth >= 1) { // 投票
+          for (let voteRepeat = 0; voteRepeat < this.gameSetting.maxRevote + 1; ++voteRepeat) {
+
+            if (false) { // NOTE: 決選投票ではなく再投票なのだが再前の投票情報は残すのが吉か? turnは?
+              todayVotes = [];
+            }
+
+            for (const a of this.agents) {
+              a.voteCount = 0;
+            }
+
+            for (const a of this.agents) {
+              const obj = {
+                request: Agent.REQ_VOTE,
+                gameInfo: this.eachInfo(this.gameInfo, a),
+                talkHistory: this.talkHistory,
+                whisperHistory: (a.role === Role.WEREWOLF) ? this.whisperHistory : [],
+                gameSetting: null,
+                //gameSetting: this.gameSetting,
+              };
+              const res = await this.reqres(a, obj);
+              _log('vote', a.idnumber, res);
+              try {
+                const resobj = JSON.parse(res);
+
+                const target = this.getAgentByRes(resobj);
+                if (target) {
+                  target.voteCount += 1;
+
+                  const vote = new Vote();
+                  vote.agent = a.idnumber;
+                  vote.target = target.idnumber;
+                  vote.day = dayth;
+                  todayVotes.push(vote);
+                } else {
+                  _warn('vote', resobj);
+                }
+              } catch (ec) {
+
+              }
+            }
+
+            { // 投票結果判定
+              /** @type {number[]} */
+              let maxIndex = [];
+              let maxCount = -1;
+              for (const a of this.agents) {
+                if (a.agentStatus !== Status.ALIVE) {
+                  continue;
+                }
+                if (a.voteCount > maxCount) {
+                  maxCount = a.voteCount;
+                  maxIndex = [a.idnumber];
+                } else if (a.voteCount === maxCount) {
+                  maxIndex.push(a.idnumber);
+                }
+              }
+
+              if (maxIndex.length === 1) {
+                exeIndex = maxIndex[0]; // 確定
+                break;
+              }
+
+              { // 同票有り
+                _log('同数票', maxIndex);
+
+                if (voteRepeat === this.gameSetting.maxRevote) {
+                  // 最終投票
+                  if (this.gameSetting.enableNoExecution) {
+                    _log('同数票で処刑無し');
+                    break;
+                  } else {
+                    exeIndex = maxIndex[this.dice.dice(maxIndex.length)];
+                    _log('ランダム', exeIndex);
+                    break;
+                  }
+                }
+              }
+            }
+
+          } // 再投票ループ
+
+          if (exeIndex >= 0) {
+            this.gameInfo.executedAgent = exeIndex;
+            this.gameInfo.statusMap[`${exeIndex}`] = Status.DEAD;
+            const target = this.getAgentByRes({agentIdx: exeIndex});
+            if (target) {
+              target.agentStatus = Status.DEAD;
+
+              _info('処刑', exeIndex, target.descname);
+            } else {
+              _warn('execute', exeIndex);
+            }
+
+            roundResult = this.checkWin();
+            if (roundResult) {
+              this.gameInfo.voteList = todayVotes;
+              break; // 日をbreak
             }
           }
 
-        } while (false);
+        }
+
+        if (roundResult) {
+          break; // 日をbreak
+        }
 
         // 夜
+        {
+          this.gameInfo.voteList = todayVotes;
+        }
+
+        { // medium はどこに入れるのがよいのか?? 翌日の朝??
+          this.gameInfo.mediumResult = null;
+          const target = this.getAgentByRes({ agentIdx: exeIndex });
+          if (target) {
+            const chars = this.getAgentsByRole(Role.MEDIUM);
+            for (const a of chars) {
+              const result = new Judge();
+              result.day = dayth; // 処刑日かその翌朝か??
+              result.target = exeIndex;
+              result.agent = a.idnumber; // さすがに複数人はいないはず
+              result.result = target.species;
+              this.gameInfo.mediumResult = result;
+            }
+          }
+        }
+
         { // seer
           const chars = this.getAgentsByRole(Role.SEER);
           for (const a of chars) {
             const obj = {
               request: Agent.REQ_DIVINE,
-              gameInfo: this.eachInfo(this.gameInfo, a, i),
+              gameInfo: this.eachInfo(this.gameInfo, a),
               talkHistory: this.talkHistory,
               whisperHistory: [],
               //whisperHistory: this.whisperHistory,
@@ -540,7 +647,7 @@ class Server {
                 result.day = i;
                 result.target = target.idnumber;
                 result.agent = a.idnumber;
-                if (target.status === Status.ALIVE) {
+                if (target.agentStatus === Status.ALIVE) {
                   result.result = target.species;
                 } else {
                   result.result = Status.UNC;
@@ -554,12 +661,13 @@ class Server {
           }
         }
 
+        let guardCandidate = -1;
         { // guard
           const chars = this.getAgentsByRole(Role.BODYGUARD);
           for (const a of chars) {
             const obj = {
               request: Agent.REQ_GUARD,
-              gameInfo: this.eachInfo(this.gameInfo, a, i),
+              gameInfo: this.eachInfo(this.gameInfo, a),
               talkHistory: this.talkHistory,
               whisperHistory: [],
               //whisperHistory: this.whisperHistory,
@@ -574,6 +682,7 @@ class Server {
               const target = this.getAgentByRes(resobj);
               if (target) {
                 this.gameInfo.guardedAgent = target.idnumber;
+                guardCandidate = resobj.agentIdx;
               }
             } catch (ec) {
 
@@ -581,30 +690,35 @@ class Server {
           }
         }
 
-        { // wolf
-          for (const a of this.agents) {
-            a.attackCount = 0;
-          }
-
+        { // 襲撃
           let targetNumber = -1;
           const chars = this.getAgentsByRole(Role.WEREWOLF);
-          do {
-            // [ ] whisper
 
+          for (let attackRepeat = 0; attackRepeat < this.gameSetting.maxAttackRevote + 1; ++attackRepeat) {
+            if (true) {
+              // whisper 未実装
+              for (const a of chars) {
+                //const res = await this.reqres(a, obj);
+              }
+            }
+
+            // 襲撃投票
+            for (const a of this.agents) {
+              a.attackCount = 0;
+            }
             for (const a of chars) {
               const obj = {
                 request: Agent.REQ_ATTACK,
-                gameInfo: this.eachInfo(this.gameInfo, a, i),
+                gameInfo: this.eachInfo(this.gameInfo, a),
                 talkHistory: this.talkHistory,
                 whisperHistory: this.whisperHistory,
                 //gameSetting: this.gameSetting,
                 gameSetting: null,
               };
               const res = await this.reqres(a, obj);
-              _log('attack', a.index, res);
+              _log('attack', a.idnumber, res);
               try {
                 const resobj = JSON.parse(res);
-                _log('attack obj', resobj);
                 const agent = this.getAgentByRes(resobj);
                 if (agent) {
                   agent.attackCount += 1;
@@ -615,11 +729,11 @@ class Server {
 
               }
             }
-
+            // 襲撃判定
             /** @type {number[]} */
             let maxIndex = [];
             let maxCount = -1;
-            for (const a of chars) {
+            for (const a of this.agents) {
               if (a.attackCount > maxCount) {
                 maxCount = a.attackCount;
                 maxIndex = [a.idnumber];
@@ -632,14 +746,38 @@ class Server {
               targetNumber = maxIndex[0];
               break;
             } else {
-              // 複数
-              // [ ] 未実装
+              _log('複数襲撃先', maxIndex);
+              if (attackRepeat === this.gameSetting.maxAttackRevote) {
+                targetNumber = maxIndex[this.dice.dice(maxIndex.length)];
+                _log('ランダム襲撃', targetNumber);
+                break;
+              }
             }
-          } while (false);
+          }
 
           if (targetNumber >= 0) {
-            // ガード判定
-            // 未実装
+            if (guardCandidate === targetNumber) {
+              targetNumber = -1;
+              this.gameInfo.guardedAgent = guardCandidate;
+              _info('ガード成功', guardCandidate);
+            }
+          }
+
+          if (targetNumber >= 0) {
+            this.gameInfo.attackedAgent = targetNumber;
+            this.gameInfo.statusMap[`${targetNumber}`] = Status.DEAD;
+            const target = this.getAgentByRes({agentIdx: targetNumber});
+            if (target) {
+              target.agentStatus = Status.DEAD;
+            } else {
+              _warn('unknown attacked', targetNumber);
+            }
+            _info('襲撃成功', targetNumber);
+
+            roundResult = this.checkWin();
+            if (roundResult) {
+              break;
+            }           
           }
 
         }
@@ -650,14 +788,14 @@ class Server {
         for (const a of this.agents) {
           const obj = {
             request: Agent.REQ_DAYFIN,
-            gameInfo: this.eachInfo(this.gameInfo, a, i),
+            gameInfo: this.eachInfo(this.gameInfo, a),
             talkHistory: this.talkHistory,
             whisperHistory: (a.role === Role.WEREWOLF) ? this.whisperHistory : [],
             //gameSetting: this.gameSetting,
             gameSetting: null,
           };
           await this.req(a, obj);
-          _log('daily_finish', i);
+          _log('daily_finish', dayth);
         }
 
       } // 日のループ最後
@@ -678,7 +816,7 @@ class Server {
         }     
       }
 
-      _log('end', JSON.stringify(this.gameInfo));
+      _log('end', roundResult, JSON.stringify(this.gameInfo));
     }
   }
 
