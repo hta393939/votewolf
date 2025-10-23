@@ -513,6 +513,9 @@ class Server {
           for (let j = 0; j < this.gameSetting.maxTalk; ++j) {
             let curTurnTalk = [];
             for (const a of this.agents) {
+              if (a.agentStatus !== Status.ALIVE) {
+                continue;
+              }
               if (a.isOver) {
                 continue;
               }
@@ -569,6 +572,10 @@ class Server {
             }
 
             for (const a of this.agents) {
+              if (a.agentStatus !== Status.ALIVE) {
+                continue;
+              }
+
               const obj = {
                 request: Agent.REQ_VOTE,
                 gameInfo: this.eachInfo(this.gameInfo, a),
@@ -724,7 +731,7 @@ class Server {
         }
 
         let guardCandidate = -1;
-        { // guard
+        if (dayth >= 1) { // guard
           const chars = this.getAgentsByRole(Role.BODYGUARD);
           for (const a of chars) {
             const obj = {
@@ -752,7 +759,7 @@ class Server {
           }
         }
 
-        { // 襲撃
+        if (dayth >= 1) { // 襲撃
           let targetNumber = -1;
           const chars = this.getAgentsByRole(Role.WEREWOLF);
 
@@ -781,9 +788,9 @@ class Server {
               _log('attack', a.idnumber, res);
               try {
                 const resobj = JSON.parse(res);
-                const agent = this.getAgentByRes(resobj);
-                if (agent) {
-                  agent.attackCount += 1;
+                const target = this.getAgentByRes(resobj);
+                if (target) {
+                  target.attackCount += 1;
                 } else {
                   _warn('wolf');
                 }

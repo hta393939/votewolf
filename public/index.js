@@ -3,7 +3,7 @@ import { RoleSet } from './lib/char.js';
 import { Log } from './lib/log.js';
 import { Round } from './lib/round.js';
 
-class Misc {
+class Misc extends EventTarget {
   static RUNNING = 'running';
   static PAUSE = 'pause';
 
@@ -18,7 +18,11 @@ class Misc {
   /**  */
   static LOOP_NONE = 'none';
 
+  static EV_MESSAGE = 'message';
+
   constructor() {
+    super();
+
     this.status = Misc.RUNNING;
     this.loopStatus = Misc.LOOP_TALK;
     this.dice = null;
@@ -29,11 +33,33 @@ class Misc {
   }
 
   initialize() {
-
+    this.addEventListener(Misc.EV_MESSAGE, ev => {
+      this.onMessage(ev.detail);
+    });
 
     this.update();
     this.intervalFunc();
   }
+
+  onMessage(data) {
+    switch (data.data.request) {
+    case 'DAILY_FINISH':
+      this.onDailyFinish(data.data);
+      break;
+    case 'FINISH':
+      this.onFinish(data.data);
+      break;
+    }
+  }
+
+  onDailyFinish(data) {
+    console.log('daily finish', data);
+  }
+
+  onFinish(data) {
+    console.log('finish', data);
+  }
+
 
   update() {
     requestAnimationFrame(() => {
@@ -265,6 +291,14 @@ class Misc {
       try {
         const obj = JSON.parse(ev.data);
         this.log.log(obj);
+
+        const cev = new CustomEvent(Misc.EV_MESSAGE, {
+          detail: {
+            data: obj,
+            ws,
+          }
+        });
+        this.dispatchEvent(cev);
       } catch (ec) {
         console.warn('message catch', ec.message);
       }
