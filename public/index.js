@@ -5,6 +5,7 @@ import { RoleSet } from './lib/char.js';
 import { Log } from './lib/log.js';
 import { Round } from './lib/round.js';
 import { ConsoleItem } from './lib/infoconsole.js';
+import { Status } from './lib/info.mjs';
 
 /**
  * TabulaterFull が必要だった。
@@ -14,7 +15,7 @@ import { ConsoleItem } from './lib/infoconsole.js';
  * @returns {string}
  */
 function _agent(cell, formatterParams, onRendered) {
-  console.log('formatter called');
+  //console.log('formatter called');
   const val = cell.getValue();
   if (val === 256) {
     return 'system';
@@ -422,8 +423,27 @@ class Misc extends EventTarget {
     console.log('tabu', tabu);
   }
 
+  /**
+   * 投票リストを分解する。
+   * NOTE: 今の実装では voteList 内の day を採用するものとする。
+   * @param {GameInfo} gameInfo 
+   */
   async divideVote(gameInfo) {
     const vs = gameInfo.voteList;
+    if (vs.length === 0) {
+      return;
+    }
+    const voteDay = vs[0].day;
+
+    const voteCounts = {};
+    //const ks = Object.keys(gameInfo.statusMap).filter(k => gameInfo.statusMap[k] === Status.ALIVE);
+    // NOTE: 投票を終わった後の daily finish だと、処刑されたり襲撃されたエージェントにも票は入る。
+
+    //const ks = Object.keys(gameInfo.statusMap);
+    //for (const k of ks) {
+    //  voteCounts[`${k}`] = {[`day${voteDay}_v`]: 0};
+    //}
+
     const items = [];
     for (const v of vs) {
       const ci = new ConsoleItem();
@@ -432,8 +452,23 @@ class Misc extends EventTarget {
       ci.target = v.target;
       ci.text = `${this.getAgentName(v.target)}に投票しました`;
       items.push(ci);
+
+      const ref = `day${v.day}_v`;
+      let obj = voteCounts[`${v.target}`];
+      if (!obj) {
+        obj = {[ref]: 0};
+      }
+      obj[ref] += 1;
+
+      let voting = voteCounts[`${v.agent}`];
+      if (!voting) {
+        voting = {[ref]: 0};
+      }
     }
     await this.tabu.addData(items, false);
+
+    const vc = Object.keys(voteCounts).map(k => voteCounts[k]);
+    await this.agentTabu.updateOrAddData(vc);
   }
 
   /**
@@ -485,8 +520,15 @@ class Misc extends EventTarget {
     for (let i = 0; i < 11; ++i) {
       for (let j = 0; j < 1; ++j) {
         const col = {
-          title: `day${i}_${j}`,
+          title: `${i}_${j}`,
           field: `day${i}_${j}`,
+        };
+        opt.columns.push(col);
+      }
+      {
+        const col = {
+          title: `${i}被投`,
+          field: `day${i}_v`,
         };
         opt.columns.push(col);
       }
