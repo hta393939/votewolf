@@ -63,36 +63,48 @@ class Misc extends EventTarget {
     this.intervalFunc();
   }
 
-  onMessage(data) {
-    {
-      const obj = {
-        day: 2,
-      };
-      //this.tabu.addData([obj], true);
-    }
+  onMessage(detail) {
+    switch (detail.data.request) {
+    case 'DAILY_INITIALIZE':
+      this.onDailyInitialize(detail.data);
+      break;
 
-    switch (data.data.request) {
     case 'DAILY_FINISH':
-      this.onDailyFinish(data.data);
+      this.onDailyFinish(detail.data);
       break;
     case 'FINISH':
-      this.onFinish(data.data);
+      this.onFinish(detail.data);
       break;
     }
   }
 
-  onDailyFinish(data) {
+  async onDailyInitialize(data) {
+    console.log('daily initialize', data);
+    if (this.latestDailyInitialize === data.gameInfo.day) {
+      return;
+    }
+    this.latestDailyInitialize = data.gameInfo.day;
+
+  }
+
+  async onDailyFinish(data) {
     console.log('daily finish', data);
     if (this.latestDailyFinish === data.gameInfo.day) {
       return;
     }
     this.latestDailyFinish = data.gameInfo.day;
-    // true だとトップ
-    this.tabu.addData(data, false);
+    // true だとトップ、false だと一番下
+    //this.tabu.addData(data, false);
+    await this.makeAgentTable(data.gameInfo);
   }
 
-  onFinish(data) {
+  async onFinish(data) {
     console.log('finish', data);
+    if (this.latestFinish === data.gameInfo.day) {
+      return;
+    }
+    this.latestFinish = data.gameInfo.day;
+
   }
 
 
@@ -354,8 +366,6 @@ class Misc extends EventTarget {
       }
     ];
 
-
-
     const div = document.getElementById('infoconsole');
     const opt = {
       movableColumns: true,
@@ -384,7 +394,7 @@ class Misc extends EventTarget {
           let icon = (val === 'ALIVE') ? '💖' : '💀';
           return `${icon}${val}`;
         }},
-        {title: 'エージェント', field: 'agentIdx', formatter: _agent},
+        {title: 'エージェント', field: 'id', formatter: _agent},
         {title: '役職', field: 'role', formatter: function(cell) {
           const val = cell.getValue();
           const to = {
@@ -413,13 +423,11 @@ class Misc extends EventTarget {
 
 
       this.makeAgentTable(
-        {role: {},status: {'1': 'ALIVE', '2': 'DEAD'}}
+        {roleMap: {},statusMap: {'1': 'ALIVE', '2': 'DEAD'}}
       );
     });
 
     console.log('agent', opt);
-
-
   }
 
   /**
@@ -427,17 +435,17 @@ class Misc extends EventTarget {
    * @param {GameInfo} gameInfo 
    */
   async makeAgentTable(gameInfo) {
-    const ks = Object.keys(gameInfo.status);
+    const ks = Object.keys(gameInfo.statusMap);
 
     const ags = {};
     for (const k of ks) {
       const obj = {
-        agentIdx: Number.parseInt(k),
+        id: Number.parseInt(k),
         day0_0: 'd00',
         day1_0: 'd10',
         day2_0: 'd11',
-        alive: gameInfo.status[k],
-        role: gameInfo.role[k],
+        alive: gameInfo.statusMap[k],
+        role: gameInfo.roleMap[k],
       };
       ags[k] = obj;
     }
