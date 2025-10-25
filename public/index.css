@@ -1,9 +1,21 @@
 
 body {
   background-color: aqua;
+  max-width: 90vw;
+  max-height: 90vh;
 }
 
 .pointer {
   cursor: pointer;
+}
+
+#agenttable {
+  margin: 0.5rem;
+  max-height: 40vh;
+}
+
+#infoconsole {
+  margin: 0.5rem;
+  max-height: 40vh;
 }
 

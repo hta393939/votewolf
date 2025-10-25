@@ -5,6 +5,22 @@ import { RoleSet } from './lib/char.js';
 import { Log } from './lib/log.js';
 import { Round } from './lib/round.js';
 
+/**
+ * TabulaterFull が必要だった。
+ * @param {*} cell 
+ * @param {*} formatterParams 
+ * @param {*} onRendered 
+ * @returns {string}
+ */
+function _agent(cell, formatterParams, onRendered) {
+  console.log('formatter called');
+  const val = cell.getValue();
+  if (val === 256) {
+    return 'system';
+  }
+  return `Agent[${new String(val).padStart(2, '0')}]`;
+}
+
 class Misc extends EventTarget {
   static RUNNING = 'running';
   static PAUSE = 'pause';
@@ -42,6 +58,7 @@ class Misc extends EventTarget {
     });
 
     this.readyTabu();
+    this.readyAgent();
     this.update();
     this.intervalFunc();
   }
@@ -337,21 +354,7 @@ class Misc extends EventTarget {
       }
     ];
 
-    /**
-     * TabulaterFull が必要だった。
-     * @param {*} cell 
-     * @param {*} formatterParams 
-     * @param {*} onRendered 
-     * @returns {string}
-     */
-    function _agent(cell, formatterParams, onRendered) {
-      console.log('formatter called');
-      const val = cell.getValue();
-      if (val === 256) {
-        return 'system';
-      }
-      return `Agent[${new String(val).padStart(2, '0')}]`;
-    }
+
 
     const div = document.getElementById('infoconsole');
     const opt = {
@@ -368,6 +371,78 @@ class Misc extends EventTarget {
     const tabu = new Tabulator(div, opt);
     this.tabu = tabu;
     console.log('tabu', tabu);
+  }
+
+  readyAgent() {
+    const div = document.getElementById('agenttable');
+    const opt = {
+      //movableColumns: true,
+      data: [],
+      columns: [
+        {title: '状態', field: 'alive', formatter: function(cell) {
+          const val = cell.getValue();
+          let icon = (val === 'ALIVE') ? '💖' : '💀';
+          return `${icon}${val}`;
+        }},
+        {title: 'エージェント', field: 'agentIdx', formatter: _agent},
+        {title: '役職', field: 'role', formatter: function(cell) {
+          const val = cell.getValue();
+          const to = {
+            'VILLAGER': '村人', 'WEREWOLF': '人狼',
+            'POSSESSED': '狂人', 'SEER': '占い師',
+            'MEDIUM': '霊媒師', 'BODYGUARD': '狩人',
+          };
+          return to[val] || '-';
+        }},
+        //{title: 'テキスト', field: 'text'},
+      ]
+    };
+    for (let i = 0; i < 11; ++i) {
+      for (let j = 0; j < 1; ++j) {
+        const col = {
+          title: `day${i}_${j}`,
+          field: `day${i}_${j}`,
+        };
+        opt.columns.push(col);
+      }
+    }
+
+    const tabu = new Tabulator(div, opt);
+    this.agentTabu = tabu;
+    tabu.on('tableBuilt', ev => {
+
+
+      this.makeAgentTable(
+        {role: {},status: {'1': 'ALIVE', '2': 'DEAD'}}
+      );
+    });
+
+    console.log('agent', opt);
+
+
+  }
+
+  /**
+   * 
+   * @param {GameInfo} gameInfo 
+   */
+  async makeAgentTable(gameInfo) {
+    const ks = Object.keys(gameInfo.status);
+
+    const ags = {};
+    for (const k of ks) {
+      const obj = {
+        agentIdx: Number.parseInt(k),
+        day0_0: 'd00',
+        day1_0: 'd10',
+        day2_0: 'd11',
+        alive: gameInfo.status[k],
+        role: gameInfo.role[k],
+      };
+      ags[k] = obj;
+    }
+
+    await this.agentTabu.updateOrAddData(ks.map(k => ags[k]), false);
   }
 
 }
