@@ -1,4 +1,6 @@
 
+import {Tabulator} from './third_party/tabulator/tabulator_esm.min.mjs';
+
 import { RoleSet } from './lib/char.js';
 import { Log } from './lib/log.js';
 import { Round } from './lib/round.js';
@@ -28,6 +30,8 @@ class Misc extends EventTarget {
     this.dice = null;
 
     this.ws = null;
+    this.tabu = null;
+    this.tabuTable = [];
 
     this.log = new Log();
   }
@@ -37,11 +41,19 @@ class Misc extends EventTarget {
       this.onMessage(ev.detail);
     });
 
+    this.readyTabu();
     this.update();
     this.intervalFunc();
   }
 
   onMessage(data) {
+    {
+      const obj = {
+        day: 2,
+      };
+      //this.tabu.addData([obj], true);
+    }
+
     switch (data.data.request) {
     case 'DAILY_FINISH':
       this.onDailyFinish(data.data);
@@ -54,6 +66,12 @@ class Misc extends EventTarget {
 
   onDailyFinish(data) {
     console.log('daily finish', data);
+    if (this.latestDailyFinish === data.gameInfo.day) {
+      return;
+    }
+    this.latestDailyFinish = data.gameInfo.day;
+    // true だとトップ
+    this.tabu.addData(data, false);
   }
 
   onFinish(data) {
@@ -304,6 +322,40 @@ class Misc extends EventTarget {
       }
     });
     console.log('addListener');
+  }
+
+  readyTabu() {
+    console.log('readyTabu');
+    this.tabuTable = [
+      {
+        gameInfo: {day: 0, agent: 256, text: '朝です',
+          talk: {text: 'トーク内容'}
+        }
+      }
+    ];
+    const div = document.getElementById('infoconsole');
+    const opt = {
+      movableColumns: true,
+      data: this.tabuTable,
+      columns: [
+        {title: '日', field: 'gameInfo.day', headerHozAlign: 'right', hozAlign: 'right'},
+        {title: 'エージェント', field: 'gameInfo.agent',
+          formatter: function(cell, formatterParams, onRendered) {
+            console.log('formatter called');
+            const val = cell.getValue();
+            if (val === 256) {
+              return 'system';
+            }
+            return `Agent[${new String(val).padStart(2, '0')}]`;
+          }
+        },
+        {title: 'テキスト', field: 'text'},
+        {title: 'トークテキスト', field: 'talk.text'},
+      ]
+    };
+    const tabu = new Tabulator(div, opt);
+    this.tabu = tabu;
+    console.log('tabu', tabu);
   }
 
 }
