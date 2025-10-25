@@ -78,6 +78,21 @@ class Misc extends EventTarget {
     }
   }
 
+  async onInitialize(data) {
+    console.log('onInitialize', data);
+    if (this.latestInitialize === data.gameInfo.day) {
+      //return;
+    }
+    this.latestInitialize = data.gameInfo.day;
+
+    this.latestDailyInitialize = -1;
+    this.latestDailyFinish = -1;
+    this.latestFinish = -1;
+
+    this.tabu.clearData();
+    this.agentTabu.clearData();
+  }
+
   async onDailyInitialize(data) {
     console.log('daily initialize', data);
     if (this.latestDailyInitialize === data.gameInfo.day) {
@@ -105,6 +120,7 @@ class Misc extends EventTarget {
     }
     this.latestFinish = data.gameInfo.day;
 
+    await this.makeAgentTable(data.gameInfo);
   }
 
 
