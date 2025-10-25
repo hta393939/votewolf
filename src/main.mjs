@@ -765,10 +765,27 @@ class Server {
 
           for (let attackRepeat = 0; attackRepeat < this.gameSetting.maxAttackRevote + 1; ++attackRepeat) {
             if (true) {
-              // whisper 未実装
+              // whisper
+              let latestWhisper = [];
               for (const a of chars) {
-                //const res = await this.reqres(a, obj);
+                const obj = {
+                  request: Agent.REQ_WHISPER,
+                  gameInfo: this.eachInfo(this.gameInfo, a),
+                  talkHistory: this.talkHistory,
+                  whisperHistory: this.whisperHistory,
+                  gameSetting: null,
+                };
+                const res = await this.reqres(a, obj);
+                _log('whisper', res);
+                const ws = new Utterance();
+                ws.day = dayth;
+                ws.agent = a.idnumber;
+                ws.turn = attackRepeat;
+                ws.text = res;
+                latestWhisper.push(ws);
               }
+
+              this.gameInfo.whisperList.push(...latestWhisper);
             }
 
             // 襲撃投票
@@ -781,7 +798,6 @@ class Server {
                 gameInfo: this.eachInfo(this.gameInfo, a),
                 talkHistory: this.talkHistory,
                 whisperHistory: this.whisperHistory,
-                //gameSetting: this.gameSetting,
                 gameSetting: null,
               };
               const res = await this.reqres(a, obj);
