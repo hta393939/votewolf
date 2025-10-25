@@ -4,6 +4,7 @@ import { TabulatorFull as Tabulator, FilterModule, EditModule } from './third_pa
 import { RoleSet } from './lib/char.js';
 import { Log } from './lib/log.js';
 import { Round } from './lib/round.js';
+import { ConsoleItem } from './lib/infoconsole.js';
 
 /**
  * TabulaterFull が必要だった。
@@ -111,6 +112,9 @@ class Misc extends EventTarget {
     // true だとトップ、false だと一番下
     //this.tabu.addData(data, false);
     await this.makeAgentTable(data.gameInfo);
+
+    await this.divideVote(data.gameInfo);
+    await this.divideNotification(data.gameInfo);
   }
 
   async onFinish(data) {
@@ -369,6 +373,16 @@ class Misc extends EventTarget {
     console.log('addListener');
   }
 
+  getAgentName(agentIdx) {
+    if (agentIdx < 0) {
+      return '-';
+    }
+    if (agentIdx === 256) {
+      return 'system';
+    }
+    return `Agent[${new String(agentIdx).padStart(2, '0')}]`;
+  }
+
   readyTabu() {
     console.log('readyTabu');
 
@@ -376,9 +390,8 @@ class Misc extends EventTarget {
 
     this.tabuTable = [
       {
-        gameInfo: {day: 0, agent: 256, text: '朝です',
-          talk: {text: 'トーク内容'}
-        }
+        id: 0,
+        day: 0, turn: 2, agent: 256, text: '朝です',
       }
     ];
 
@@ -387,11 +400,11 @@ class Misc extends EventTarget {
       movableColumns: true,
       data: this.tabuTable,
       columns: [
-        {title: '日', field: 'gameInfo.day', headerHozAlign: 'right', hozAlign: 'right'},
-        //{title: 'エージェント', field: 'gameInfo.agent', formatter: _agent},
-        {title: 'エージェント', field: 'gameInfo.agent', formatter: _agent},
-        {title: 'テキスト', field: 'text'},
-        {title: 'トークテキスト', field: 'talk.text'},
+        {title: '#', field: 'id', headerHozAlign: 'right', hozAlign: 'right'},
+        {title: '日', field: 'day', headerHozAlign: 'right', hozAlign: 'right'},
+        {title: 't', field: 'turn', headerHozAlign: 'right', hozAlign: 'right'},
+        {title: 'エージェント', field: 'agent', formatter: _agent},
+        {title: '', field: 'text'},
       ]
     };
     const tabu = new Tabulator(div, opt);
@@ -399,19 +412,55 @@ class Misc extends EventTarget {
     console.log('tabu', tabu);
   }
 
+  async divideVote(gameInfo) {
+    const vs = gameInfo.voteList;
+    const items = [];
+    for (const v of vs) {
+      const ci = new ConsoleItem();
+      ci.day = v.day;
+      ci.agent = v.agent;
+      ci.target = v.target;
+      ci.text = `${this.getAgentName(v.target)}に投票しました`;
+      items.push(ci);
+    }
+    await this.tabu.addData(items, false);
+  }
+
+  /**
+   * トークリストを分解してアイテム追加する
+   * @param {*} gameInfo 
+   */
+  async divideNotification(gameInfo) {
+    const ts = gameInfo.talkList;
+    const items = [];
+    for (const t of ts) {
+      const ci = new ConsoleItem();
+      ci.day = t.day;
+      ci.turn = t.turn;
+      ci.agent = t.agent;
+      ci.target = t.target;
+      ci.text = t.text;
+      items.push(ci);
+    }
+    await this.tabu.addData(items, false);
+  }
+
+  /**
+   * エージェントテーブルを用意する
+   */
   readyAgent() {
     const div = document.getElementById('agenttable');
     const opt = {
       //movableColumns: true,
       data: [],
       columns: [
-        {title: '状態', field: 'alive', formatter: function(cell) {
+        {title: '状態', field: 'alive', frozen: true, formatter: function(cell) {
           const val = cell.getValue();
           let icon = (val === 'ALIVE') ? '💖' : '💀';
           return `${icon}${val}`;
         }},
-        {title: 'エージェント', field: 'id', formatter: _agent},
-        {title: '役職', field: 'role', formatter: function(cell) {
+        {title: 'エージェント', field: 'id', frozen: true, formatter: _agent},
+        {title: '役職', field: 'role', frozen: true, formatter: function(cell) {
           const val = cell.getValue();
           const to = {
             'VILLAGER': '村人', 'WEREWOLF': '人狼',

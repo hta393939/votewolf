@@ -6,6 +6,8 @@ export class ConsoleItem {
   constructor() {
     this.type = ConsoleItem.TYPE_SYSTEM;
 
+    this.agent = 1;
+
     this.text = '';
     /** 0は初日の前の日の夜用。day number にも使うか */
     this.day = 1;
@@ -13,6 +15,8 @@ export class ConsoleItem {
     this.hours = 10;
 
     this.talk_id = 1;
+
+    this.target = -1;
   }
 }
 
