@@ -1,5 +1,5 @@
 
-import {Tabulator} from './third_party/tabulator/tabulator_esm.min.mjs';
+import { TabulatorFull as Tabulator, FilterModule, EditModule } from './third_party/tabulator/tabulator_esm.min.mjs';
 
 import { RoleSet } from './lib/char.js';
 import { Log } from './lib/log.js';
@@ -326,6 +326,9 @@ class Misc extends EventTarget {
 
   readyTabu() {
     console.log('readyTabu');
+
+    Tabulator.registerModule([FilterModule, EditModule]);
+
     this.tabuTable = [
       {
         gameInfo: {day: 0, agent: 256, text: '朝です',
@@ -333,22 +336,31 @@ class Misc extends EventTarget {
         }
       }
     ];
+
+    /**
+     * TabulaterFull が必要だった。
+     * @param {*} cell 
+     * @param {*} formatterParams 
+     * @param {*} onRendered 
+     * @returns {string}
+     */
+    function _agent(cell, formatterParams, onRendered) {
+      console.log('formatter called');
+      const val = cell.getValue();
+      if (val === 256) {
+        return 'system';
+      }
+      return `Agent[${new String(val).padStart(2, '0')}]`;
+    }
+
     const div = document.getElementById('infoconsole');
     const opt = {
       movableColumns: true,
       data: this.tabuTable,
       columns: [
         {title: '日', field: 'gameInfo.day', headerHozAlign: 'right', hozAlign: 'right'},
-        {title: 'エージェント', field: 'gameInfo.agent',
-          formatter: function(cell, formatterParams, onRendered) {
-            console.log('formatter called');
-            const val = cell.getValue();
-            if (val === 256) {
-              return 'system';
-            }
-            return `Agent[${new String(val).padStart(2, '0')}]`;
-          }
-        },
+        //{title: 'エージェント', field: 'gameInfo.agent', formatter: _agent},
+        {title: 'エージェント', field: 'gameInfo.agent', formatter: _agent},
         {title: 'テキスト', field: 'text'},
         {title: 'トークテキスト', field: 'talk.text'},
       ]
