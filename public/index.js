@@ -346,6 +346,11 @@ class Misc extends EventTarget {
     console.log('addListener');
     ws.addEventListener('open', ev => {
       console.log('open', ev);
+
+      const el = document.getElementById('network');
+      if (el) {
+        el.textContent = '📶接続中';
+      }
     });
     ws.addEventListener('error', ev => {
       console.log('error', ev);
@@ -353,6 +358,11 @@ class Misc extends EventTarget {
     ws.addEventListener('close', ev => {
       console.log('close', ev);
       this.ws = null;
+
+      const el = document.getElementById('network');
+      if (el) {
+        el.textContent = '🚫切断中';
+      }
     });
     ws.addEventListener('message', ev => {
       try {

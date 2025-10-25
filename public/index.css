@@ -1,12 +1,16 @@
 
 body {
-  background-color: aqua;
+  background-color: #f0f0f0;
   max-width: 90vw;
   max-height: 90vh;
 }
 
 .pointer {
   cursor: pointer;
+}
+
+#main {
+  position: relative;
 }
 
 #agenttable {
@@ -19,3 +23,7 @@ body {
   max-height: 40vh;
 }
 
+#network {
+  position: fixed;
+  top: 0;
+}
