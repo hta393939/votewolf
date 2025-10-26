@@ -1,5 +1,7 @@
 
-import { TabulatorFull as Tabulator, FilterModule, EditModule } from './third_party/tabulator/tabulator_esm.min.mjs';
+import { TabulatorFull as Tabulator, FilterModule, EditModule,
+  InteractionModule,
+} from './third_party/tabulator/tabulator_esm.min.mjs';
 
 import { RoleSet } from './lib/char.js';
 import { Log } from './lib/log.js';
@@ -102,6 +104,7 @@ class Misc extends EventTarget {
     }
     this.latestDailyInitialize = data.gameInfo.day;
 
+    await this.resultApply(data.gameInfo);
   }
 
   async onDailyFinish(data) {
@@ -126,6 +129,10 @@ class Misc extends EventTarget {
     this.latestFinish = data.gameInfo.day;
 
     await this.makeAgentTable(data.gameInfo);
+
+    { // 決定日の反映 [ ] 未実装
+
+    }
   }
 
 
@@ -397,7 +404,9 @@ class Misc extends EventTarget {
   readyTabu() {
     console.log('readyTabu');
 
-    Tabulator.registerModule([FilterModule, EditModule]);
+    Tabulator.registerModule([FilterModule, EditModule,
+      InteractionModule,
+    ]);
 
     this.tabuTable = [
       {
@@ -500,6 +509,47 @@ class Misc extends EventTarget {
   }
 
   /**
+   * 昨晩の結果を表示に反映する
+   * @param {GameInfo} gameInfo 
+   */
+  async resultApply(gameInfo) {
+    const targetDay = gameInfo.day - 1;
+    const objs = [
+      {agent: gameInfo.executedAgent, class: 'exedback'},
+      {agent: gameInfo.guardedAgent, class: 'gdback'},
+      {agent: gameInfo.attackedAgent, class: 'attdback'},
+    ];
+    for (const obj of objs) {
+      const cell = this.getAgentCell(obj.agent, `day${targetDay}_vc`);
+      const el = cell?.getElement();
+      el?.classList.add(obj.class);
+    }
+  }
+
+  /**
+   * 
+   * @param {number} agentIdx 
+   * @param {string} field 
+   */
+  getAgentCell(agentIdx, field) {
+    const rows = this.agentTabu.getRows();
+    const row = rows.find(r => r.getData().id === agentIdx);
+    if (!row) {
+      return null;
+    }
+    const cells = row.getCells();
+    const cell = cells.find(ce => {
+      const col = ce.getColumn();
+      const def = col.getDefinition();
+      if (def.field === field) {
+        return true;
+      }
+      return false;
+    });
+    return cell;
+  }
+
+  /**
    * エージェントテーブルを用意する
    */
   readyAgent() {
@@ -529,7 +579,7 @@ class Misc extends EventTarget {
     for (let i = 1; i < 11; ++i) {
       for (let j = 0; j < 1; ++j) {
         const col = {
-          title: `${i}_${j}`,
+          title: `${i}_${j}投`,
           field: `day${i}_${j}`,
         };
         opt.columns.push(col);
@@ -548,16 +598,28 @@ class Misc extends EventTarget {
         };
         opt.columns.push(col);
       }
+      {
+        const col = {
+          title: `${i}行動`,
+          field: `day${i}_act`,
+        };
+        opt.columns.push(col);       
+      }
     }
 
     const tabu = new Tabulator(div, opt);
     this.agentTabu = tabu;
-    tabu.on('tableBuilt', ev => {
+    tabu.on('tableBuilt', async ev => {
 
 
-      this.makeAgentTable(
+      await this.makeAgentTable(
         {roleMap: {},statusMap: {'1': 'ALIVE', '2': 'DEAD'}}
       );
+
+      { // 本当にデータ
+        const data = this.agentTabu.searchData('id', '=', 2);
+        console.log('search data', data);
+      }
     });
 
     console.log('agent', opt);
@@ -574,7 +636,7 @@ class Misc extends EventTarget {
     for (const k of ks) {
       const obj = {
         id: Number.parseInt(k),
-        day1_0: 'd10',
+        day1_0: '-10',
         alive: gameInfo.statusMap[k],
         role: gameInfo.roleMap[k],
       };

@@ -9,6 +9,19 @@ body {
   cursor: pointer;
 }
 
+.exedback {
+  background-color: #808000;
+}
+
+.attdback {
+  background-color: #800000;
+}
+
+.gdback {
+  background-color: #0000ff;
+}
+
+
 #main {
   position: relative;
 }

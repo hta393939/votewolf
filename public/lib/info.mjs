@@ -74,7 +74,7 @@ export class Judge {
 export class GameInfo {
   constructor() {
     /** あなたが誰か @type {number} */
-    this.agent = 1;
+    this.agent = -1;
     /** @type {Vote[]} */
     this.attackVoteList = [];
     /** @type {number} */
