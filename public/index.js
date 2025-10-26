@@ -636,7 +636,7 @@ class Misc extends EventTarget {
     for (const k of ks) {
       const obj = {
         id: Number.parseInt(k),
-        day1_0: '-10',
+        //day1_0: -10, // 上書きできない???
         alive: gameInfo.statusMap[k],
         role: gameInfo.roleMap[k],
       };
