@@ -92,6 +92,8 @@ class Server {
     this.talkHistory = [];
     this.whisperHistory = [];
 
+    this.nightInfo = new GameInfo();
+
     this.wscs = [];
   }
 
@@ -484,11 +486,16 @@ class Server {
         this.gameInfo.whisperList = [];
 
         { // 未実装 昨晩の結果の反映
+          this.gameInfo.executedAgent = this.nightInfo.executedAgent;
+          this.gameInfo.attackedAgent = this.nightInfo.attackedAgent;
+          this.gameInfo.guardedAgent = this.nightInfo.guardedAgent;
           // 投票
           // 襲撃
           // 占い
           // 霊媒
           // ガード
+
+          this.nightInfo = new GameInfo(); // クリア
         }
 
         for (const a of this.agents) {
@@ -647,7 +654,7 @@ class Server {
           } // 再投票ループ
 
           if (exeIndex >= 0) {
-            this.gameInfo.executedAgent = exeIndex;
+            this.nightInfo.executedAgent = exeIndex;
             this.gameInfo.statusMap[`${exeIndex}`] = Status.DEAD;
             const target = this.getAgentByRes({agentIdx: exeIndex});
             if (target) {
@@ -667,11 +674,11 @@ class Server {
 
         }
 
-        if (roundResult) {
-          break; // 日をbreak
+        //// 夜
+        // NOTE: 投票結果はおそらく通知してよいはず
+        { // 当日の投票結果
+          this.gameInfo.latestExecutedAgent = this.nightInfo.executedAgent;
         }
-
-        // 夜
         {
           this.gameInfo.voteList = todayVotes;
         }
@@ -750,7 +757,8 @@ class Server {
               _log('guard obj', resobj);
               const target = this.getAgentByRes(resobj);
               if (target) {
-                this.gameInfo.guardedAgent = target.idnumber;
+                // NOTE: ガードしようとした、かガードに成功したかどっちだろう
+                this.nightInfo.guardedAgent = target.idnumber;
                 guardCandidate = resobj.agentIdx;
               }
             } catch (ec) {
@@ -843,13 +851,13 @@ class Server {
           if (targetNumber >= 0) {
             if (guardCandidate === targetNumber) {
               targetNumber = -1;
-              this.gameInfo.guardedAgent = guardCandidate;
+              this.nightInfo.guardedAgent = guardCandidate;
               _info('ガード成功', guardCandidate);
             }
           }
 
           if (targetNumber >= 0) {
-            this.gameInfo.attackedAgent = targetNumber;
+            this.nightInfo.attackedAgent = targetNumber;
             this.gameInfo.statusMap[`${targetNumber}`] = Status.DEAD;
             const target = this.getAgentByRes({agentIdx: targetNumber});
             if (target) {
@@ -867,8 +875,9 @@ class Server {
 
         }
 
-        // [ ] 夜セットするのか? 朝セットするのか?
+        // [ ] 結果は夜セットするのか? 翌朝セットするのか?
         // ゲーム配信進行上は被害者は朝公開されることが多い
+        // 現在の実装では夜公開していない
 
         for (const a of this.agents) {
           const obj = {
