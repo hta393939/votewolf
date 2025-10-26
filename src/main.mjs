@@ -664,12 +664,6 @@ class Server {
             } else {
               _warn('execute', exeIndex);
             }
-
-            roundResult = this.checkWin();
-            if (roundResult) {
-              this.gameInfo.voteList = todayVotes;
-              break; // 日をbreak
-            }
           }
 
         }
@@ -681,6 +675,13 @@ class Server {
         }
         {
           this.gameInfo.voteList = todayVotes;
+        }
+
+        {
+          roundResult = this.checkWin();
+          if (roundResult) {
+            break; // 日ループをbreak
+          }
         }
 
         { // medium はどこに入れるのがよいのか?? 翌日の朝??

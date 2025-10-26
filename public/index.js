@@ -130,8 +130,9 @@ class Misc extends EventTarget {
 
     await this.makeAgentTable(data.gameInfo);
 
-    { // 決定日の反映 [ ] 未実装
-
+    { // 決定日の反映
+      await this.divideVote(data.gameInfo);
+      await this.divideNotification(data.gameInfo);
     }
   }
 
