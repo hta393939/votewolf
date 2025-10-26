@@ -781,7 +781,7 @@ class Server {
                 ws.day = dayth;
                 ws.agent = a.idnumber;
                 ws.turn = attackRepeat;
-                ws.text = res;
+                ws.text = res.toString();
                 latestWhisper.push(ws);
               }
 

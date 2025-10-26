@@ -468,6 +468,7 @@ class Misc extends EventTarget {
         voting = {id: v.agent, [ref]: 0};
         voteCounts[votingKey] = voting;
       }
+      voting[`day${v.day}_${0}`] = v.target;
     }
     if (items.length >= 1) {
       await this.tabu.addData(items, false);
@@ -573,9 +574,7 @@ class Misc extends EventTarget {
     for (const k of ks) {
       const obj = {
         id: Number.parseInt(k),
-        day0_0: 'd00',
         day1_0: 'd10',
-        day2_0: 'd11',
         alive: gameInfo.statusMap[k],
         role: gameInfo.roleMap[k],
       };
