@@ -545,7 +545,7 @@ class Server {
                 talk.agent = a.idnumber;
                 talk.day = dayth;
                 talk.turn = j;
-                talk.text = res;
+                talk.text = res.toString('utf8');
                 talk.idx = a.idnumber; // TODO: なんだっけ...
                 curTurnTalk.push(talk);
               }

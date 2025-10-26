@@ -5,7 +5,7 @@ import { RoleSet } from './lib/char.js';
 import { Log } from './lib/log.js';
 import { Round } from './lib/round.js';
 import { ConsoleItem } from './lib/infoconsole.js';
-import { Status } from './lib/info.mjs';
+import { GameInfo, Status } from './lib/info.mjs';
 
 /**
  * TabulaterFull が必要だった。
@@ -453,27 +453,35 @@ class Misc extends EventTarget {
       ci.text = `${this.getAgentName(v.target)}に投票しました`;
       items.push(ci);
 
-      const ref = `day${v.day}_v`;
-      let obj = voteCounts[`${v.target}`];
+      const ref = `day${v.day}_vc`;
+      const targetKey = `${v.target}`;
+      let obj = voteCounts[targetKey];
       if (!obj) {
-        obj = {[ref]: 0};
+        obj = {id: v.target, [ref]: 0};
+        voteCounts[targetKey] = obj;
       }
       obj[ref] += 1;
 
-      let voting = voteCounts[`${v.agent}`];
+      const votingKey = `${v.agent}`;
+      let voting = voteCounts[votingKey];
       if (!voting) {
-        voting = {[ref]: 0};
+        voting = {id: v.agent, [ref]: 0};
+        voteCounts[votingKey] = voting;
       }
     }
-    await this.tabu.addData(items, false);
+    if (items.length >= 1) {
+      await this.tabu.addData(items, false);
+    }
 
     const vc = Object.keys(voteCounts).map(k => voteCounts[k]);
-    await this.agentTabu.updateOrAddData(vc);
+    if (vc.length >= 1) {
+      await this.agentTabu.updateOrAddData(vc);
+    }
   }
 
   /**
    * トークリストを分解してアイテム追加する
-   * @param {*} gameInfo 
+   * @param {GameInfo} gameInfo 
    */
   async divideNotification(gameInfo) {
     const ts = gameInfo.talkList;
@@ -517,7 +525,7 @@ class Misc extends EventTarget {
         //{title: 'テキスト', field: 'text'},
       ]
     };
-    for (let i = 0; i < 11; ++i) {
+    for (let i = 1; i < 11; ++i) {
       for (let j = 0; j < 1; ++j) {
         const col = {
           title: `${i}_${j}`,
@@ -528,7 +536,14 @@ class Misc extends EventTarget {
       {
         const col = {
           title: `${i}被投`,
-          field: `day${i}_v`,
+          field: `day${i}_vc`,
+        };
+        opt.columns.push(col);
+      }
+      if (false) {
+        const col = {
+          title: `${i}狼投`,
+          field: `day${i}_wc`,
         };
         opt.columns.push(col);
       }
